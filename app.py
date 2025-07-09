@@ -4,7 +4,6 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import librosa
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,7 +12,6 @@ import json
 import time
 import warnings
 import os
-import cv2
 import networkx as nx
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.neural_network import MLPClassifier
@@ -21,12 +19,39 @@ from sklearn.metrics import classification_report, accuracy_score, f1_score
 from sklearn.preprocessing import RobustScaler, LabelEncoder
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.model_selection import train_test_split
-import xgboost as xgb
-import lightgbm as lgb
 from scipy import stats
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 import pickle
+
+# Try to import optional dependencies
+try:
+    import librosa
+    LIBROSA_AVAILABLE = True
+except ImportError:
+    LIBROSA_AVAILABLE = False
+    st.error("⚠️ librosa not available. Audio processing will be limited.")
+
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    st.warning("⚠️ OpenCV (cv2) not available. Vision Transformer features will use fallback.")
+
+try:
+    import xgboost as xgb
+    XGBOOST_AVAILABLE = True
+except ImportError:
+    XGBOOST_AVAILABLE = False
+    st.warning("⚠️ XGBoost not available. Using fallback models.")
+
+try:
+    import lightgbm as lgb
+    LIGHTGBM_AVAILABLE = True
+except ImportError:
+    LIGHTGBM_AVAILABLE = False
+    st.warning("⚠️ LightGBM not available. Using fallback models.")
 
 # Try to import advanced models
 try:
@@ -128,6 +153,14 @@ st.markdown("""
         border: 2px solid #fbc02d;
         margin: 1rem 0;
     }
+    
+    .dependency-warning {
+        background: linear-gradient(145deg, #ffebee 0%, #ffcdd2 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        border: 2px solid #f44336;
+        margin: 1rem 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -161,7 +194,7 @@ class SOTAFeatureExtractor:
     def __init__(self, sample_rate=22050):
         self.sample_rate = sample_rate
         self.feature_names = None
-        self.vision_transformer_available = ADVANCED_MODELS_AVAILABLE
+        self.vision_transformer_available = ADVANCED_MODELS_AVAILABLE and CV2_AVAILABLE
         
         # Initialize Vision Transformer for mel-spectrogram processing
         if self.vision_transformer_available:
@@ -175,6 +208,10 @@ class SOTAFeatureExtractor:
     
     def extract_sota_features(self, audio_file_path):
         """Extract 214 SOTA features as per your research"""
+        if not LIBROSA_AVAILABLE:
+            st.error("❌ Cannot extract features: librosa not available")
+            return {}
+            
         try:
             # Load audio
             audio, sr = librosa.load(audio_file_path, sr=self.sample_rate, duration=config.DURATION)
@@ -196,6 +233,10 @@ class SOTAFeatureExtractor:
             # 2. VISION TRANSFORMER FEATURES (2024 breakthrough)
             if self.vision_transformer_available:
                 features.update(self._extract_vision_transformer_features(audio, sr))
+            else:
+                # Add placeholder ViT features
+                for i in range(50):
+                    features[f'vit_feature_{i}'] = 0.0
             
             # 3. GRAPH-BASED FEATURES (2024 Scientific Reports)
             features.update(self._extract_graph_based_features(audio))
@@ -283,7 +324,7 @@ class SOTAFeatureExtractor:
         """Vision Transformer features from mel-spectrogram (2024 breakthrough)"""
         features = {}
         
-        if not self.vision_transformer_available:
+        if not (self.vision_transformer_available and CV2_AVAILABLE):
             # Placeholder features
             for i in range(50):
                 features[f'vit_feature_{i}'] = 0.0
@@ -455,7 +496,7 @@ class SOTAFeatureExtractor:
             return False
 
 class SOTAEmotionClassifier:
-    """SOTA emotion classifier using your proven models (excluding Gradient Boosting)"""
+    """SOTA emotion classifier using your proven models"""
     
     def __init__(self):
         self.models = {}
@@ -464,59 +505,74 @@ class SOTAEmotionClassifier:
         self.feature_selector = None
         self.is_trained = False
         
-        # Initialize models based on your research (excluding Gradient Boosting)
+        # Initialize models based on your research
         self._init_models()
     
     def _init_models(self):
         """Initialize SOTA models as per your research"""
-        self.models = {
-            'SOTA XGBoost (2024)': xgb.XGBClassifier(
-                n_estimators=600,
-                max_depth=12,
-                learning_rate=0.02,
-                subsample=0.8,
-                colsample_bytree=0.8,
-                reg_alpha=0.1,
-                reg_lambda=0.1,
-                random_state=42,
-                eval_metric='mlogloss',
-                tree_method='hist'
-            ),
-            'SOTA LightGBM (2024)': lgb.LGBMClassifier(
-                n_estimators=600,
-                max_depth=12,
-                learning_rate=0.02,
-                subsample=0.8,
-                colsample_bytree=0.8,
-                reg_alpha=0.1,
-                reg_lambda=0.1,
-                random_state=42,
-                verbose=-1,
-                objective='multiclass',
-                metric='multi_logloss'
-            ),
-            'SOTA Random Forest (2024)': RandomForestClassifier(
-                n_estimators=600,
-                max_depth=35,
-                min_samples_split=2,
-                min_samples_leaf=1,
-                max_features='sqrt',
-                random_state=42,
-                n_jobs=-1,
-                class_weight='balanced'
-            ),
-            'SOTA Deep Neural Network': MLPClassifier(
-                hidden_layer_sizes=(1024, 512, 256, 128, 64),
-                activation='relu',
-                solver='adam',
-                alpha=0.0001,
-                learning_rate='adaptive',
-                max_iter=1500,
-                random_state=42,
-                early_stopping=True,
-                validation_fraction=0.1
-            )
-        }
+        self.models = {}
+        
+        # Only add models that are available
+        if XGBOOST_AVAILABLE:
+            try:
+                import xgboost as xgb
+                self.models['SOTA XGBoost (2024)'] = xgb.XGBClassifier(
+                    n_estimators=600,
+                    max_depth=12,
+                    learning_rate=0.02,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    reg_alpha=0.1,
+                    reg_lambda=0.1,
+                    random_state=42,
+                    eval_metric='mlogloss',
+                    tree_method='hist'
+                )
+            except Exception as e:
+                st.warning(f"XGBoost initialization failed: {e}")
+        
+        if LIGHTGBM_AVAILABLE:
+            try:
+                import lightgbm as lgb
+                self.models['SOTA LightGBM (2024)'] = lgb.LGBMClassifier(
+                    n_estimators=600,
+                    max_depth=12,
+                    learning_rate=0.02,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    reg_alpha=0.1,
+                    reg_lambda=0.1,
+                    random_state=42,
+                    verbose=-1,
+                    objective='multiclass',
+                    metric='multi_logloss'
+                )
+            except Exception as e:
+                st.warning(f"LightGBM initialization failed: {e}")
+        
+        # Always available models
+        self.models['SOTA Random Forest (2024)'] = RandomForestClassifier(
+            n_estimators=600,
+            max_depth=35,
+            min_samples_split=2,
+            min_samples_leaf=1,
+            max_features='sqrt',
+            random_state=42,
+            n_jobs=-1,
+            class_weight='balanced'
+        )
+        
+        self.models['SOTA Deep Neural Network'] = MLPClassifier(
+            hidden_layer_sizes=(1024, 512, 256, 128, 64),
+            activation='relu',
+            solver='adam',
+            alpha=0.0001,
+            learning_rate='adaptive',
+            max_iter=1500,
+            random_state=42,
+            early_stopping=True,
+            validation_fraction=0.1
+        )
     
     def simulate_training(self):
         """Simulate the training process using your proven results"""
@@ -621,6 +677,32 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Dependency status check
+st.markdown("### 📋 System Status")
+dependency_status = {
+    'librosa (Audio Processing)': LIBROSA_AVAILABLE,
+    'OpenCV (Vision Features)': CV2_AVAILABLE,
+    'XGBoost (SOTA Model)': XGBOOST_AVAILABLE,
+    'LightGBM (SOTA Model)': LIGHTGBM_AVAILABLE,
+    'timm (Vision Transformer)': ADVANCED_MODELS_AVAILABLE
+}
+
+col1, col2, col3 = st.columns(3)
+for i, (dep, available) in enumerate(dependency_status.items()):
+    with [col1, col2, col3][i % 3]:
+        if available:
+            st.success(f"✅ {dep}")
+        else:
+            st.error(f"❌ {dep}")
+
+if not all(dependency_status.values()):
+    st.markdown('<div class="dependency-warning">', unsafe_allow_html=True)
+    st.markdown("""
+    ⚠️ **Some dependencies are missing.** The system will work with fallback functionality, 
+    but full SOTA performance requires all dependencies. Please update your requirements.txt with the missing packages.
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 # Sidebar
 st.sidebar.title("🎯 SOTA Navigation")
 st.sidebar.markdown("""
@@ -696,51 +778,16 @@ if nav_selection == "🏠 SOTA Dashboard":
         'CV Score': '{:.3f}'
     }), use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # SOTA Techniques Overview
-    st.markdown("### 🔬 SOTA Techniques Implemented")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown('<div class="vision-transformer">', unsafe_allow_html=True)
-        st.markdown("#### 🎨 Vision Transformer (2024)")
-        st.markdown("- Mel-spectrograms processed as images")
-        st.markdown("- 50 deep visual features extracted")
-        st.markdown("- Pre-trained on ImageNet, fine-tuned for audio")
-        st.markdown("- Breakthrough performance for SER")
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="quantum-features">', unsafe_allow_html=True)
-        st.markdown("#### ⚛️ Quantum-Inspired Features (2025)")
-        st.markdown("- Quantum entanglement measures")
-        st.markdown("- Audio segment coherence analysis")
-        st.markdown("- Novel correlation-based features")
-        st.markdown("- Cutting-edge research application")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown('<div class="graph-neural">', unsafe_allow_html=True)
-        st.markdown("#### 🕸️ Graph Neural Networks (2024)")
-        st.markdown("- Visibility graph construction")
-        st.markdown("- Network topology features")
-        st.markdown("- Graph density and clustering metrics")
-        st.markdown("- Scientific Reports validation")
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="advanced-analysis">', unsafe_allow_html=True)
-        st.markdown("#### 📊 Advanced Prosodic Analysis")
-        st.markdown("- Enhanced F0 extraction and analysis")
-        st.markdown("- Jitter and shimmer measurements")
-        st.markdown("- Voice quality assessment")
-        st.markdown("- Comprehensive energy analysis")
-        st.markdown('</div>', unsafe_allow_html=True)
 
 elif nav_selection == "🚀 SOTA Audio Analysis":
     st.markdown("## 🚀 SOTA Audio Analysis")
     
     if not st.session_state.models_loaded:
         st.warning("⚠️ Please load SOTA models from the sidebar first!")
+        st.stop()
+    
+    if not LIBROSA_AVAILABLE:
+        st.error("❌ Audio analysis requires librosa. Please install it to continue.")
         st.stop()
     
     st.markdown('<div class="sota-feature-card">', unsafe_allow_html=True)
@@ -806,63 +853,6 @@ elif nav_selection == "🚀 SOTA Audio Analysis":
                                    color_continuous_scale='viridis')
                         fig.update_layout(height=400)
                         st.plotly_chart(fig, use_container_width=True)
-                        
-                        # Individual model predictions
-                        st.markdown("### 🤖 Individual SOTA Model Predictions")
-                        
-                        for model_name, pred_info in prediction_result['model_predictions'].items():
-                            st.markdown(f'<div class="model-performance">', unsafe_allow_html=True)
-                            st.markdown(f"#### {model_name}")
-                            
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.metric("Prediction", pred_info['prediction'].title())
-                            with col2:
-                                st.metric("Model F1-Score", f"{pred_info['confidence']:.3f}")
-                            with col3:
-                                actual_perf = config.MODEL_PERFORMANCE[model_name]
-                                st.metric("Test Accuracy", f"{actual_perf['accuracy']:.3f}")
-                            
-                            st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        # Feature analysis
-                        st.markdown("### 🔬 SOTA Feature Analysis")
-                        
-                        # Categorize features
-                        feature_categories = {
-                            'Traditional Features (MFCC, Spectral)': 0,
-                            'Vision Transformer Features': 0,
-                            'Graph Neural Network Features': 0,
-                            'Advanced Prosodic Features': 0,
-                            'Quantum-Inspired Features': 0
-                        }
-                        
-                        for feature_name in features.keys():
-                            if 'mfcc' in feature_name or 'spectral' in feature_name or 'chroma' in feature_name:
-                                feature_categories['Traditional Features (MFCC, Spectral)'] += 1
-                            elif 'vit_feature' in feature_name:
-                                feature_categories['Vision Transformer Features'] += 1
-                            elif 'graph' in feature_name:
-                                feature_categories['Graph Neural Network Features'] += 1
-                            elif 'f0' in feature_name or 'energy' in feature_name:
-                                feature_categories['Advanced Prosodic Features'] += 1
-                            elif 'quantum' in feature_name:
-                                feature_categories['Quantum-Inspired Features'] += 1
-                        
-                        # Feature category visualization
-                        cat_df = pd.DataFrame(list(feature_categories.items()), 
-                                            columns=['Category', 'Count'])
-                        
-                        fig = px.pie(cat_df, values='Count', names='Category',
-                                   title="SOTA Feature Distribution by Category")
-                        st.plotly_chart(fig, use_container_width=True)
-                        
-                        # Detailed feature values (sample)
-                        with st.expander("🔍 Detailed SOTA Feature Values (Sample)"):
-                            sample_features = dict(list(features.items())[:20])
-                            feature_df = pd.DataFrame(list(sample_features.items()), 
-                                                    columns=['Feature', 'Value'])
-                            st.dataframe(feature_df, use_container_width=True)
                     else:
                         st.error("❌ Emotion prediction failed")
                 else:
@@ -897,61 +887,6 @@ elif nav_selection == "🧠 Model Performance":
         showlegend=True,
         title="SOTA Model Performance Radar Chart",
         height=600
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Performance metrics table
-    st.markdown("### 📋 Comprehensive Performance Metrics")
-    
-    perf_data = []
-    for model_name, perf in config.MODEL_PERFORMANCE.items():
-        perf_data.append({
-            'Model': model_name,
-            'Test Accuracy': f"{perf['accuracy']:.3f}",
-            'F1-Score': f"{perf['f1_score']:.3f}",
-            'CV F1-Score': f"{perf['cv_score']:.3f}",
-            'Performance Tier': 'Excellent' if perf['accuracy'] > 0.82 else 'Very Good' if perf['accuracy'] > 0.81 else 'Good'
-        })
-    
-    df_performance = pd.DataFrame(perf_data)
-    st.dataframe(df_performance, use_container_width=True)
-    
-    # Model complexity and efficiency
-    st.markdown("### ⚖️ Model Complexity vs Performance")
-    
-    complexity_data = {
-        'SOTA XGBoost (2024)': {'complexity': 85, 'training_time': 45, 'inference_speed': 95},
-        'SOTA LightGBM (2024)': {'complexity': 80, 'training_time': 40, 'inference_speed': 98},
-        'SOTA Random Forest (2024)': {'complexity': 75, 'training_time': 60, 'inference_speed': 85},
-        'SOTA Deep Neural Network': {'complexity': 95, 'training_time': 120, 'inference_speed': 70},
-        'SOTA Ensemble (2024-2025)': {'complexity': 90, 'training_time': 80, 'inference_speed': 75}
-    }
-    
-    fig = go.Figure()
-    
-    for model_name, metrics in complexity_data.items():
-        perf = config.MODEL_PERFORMANCE[model_name]
-        fig.add_trace(go.Scatter(
-            x=[metrics['complexity']],
-            y=[perf['accuracy']],
-            mode='markers+text',
-            marker=dict(size=metrics['training_time']/3, opacity=0.7),
-            text=[model_name.split('(')[0].strip()],
-            textposition="top center",
-            name=model_name,
-            hovertemplate=f"<b>{model_name}</b><br>" +
-                         f"Complexity: {metrics['complexity']}<br>" +
-                         f"Accuracy: {perf['accuracy']:.3f}<br>" +
-                         f"Training Time: {metrics['training_time']}min<br>" +
-                         f"Inference Speed: {metrics['inference_speed']}<extra></extra>"
-        ))
-    
-    fig.update_layout(
-        title="Model Complexity vs Accuracy (Bubble size = Training Time)",
-        xaxis_title="Model Complexity Score",
-        yaxis_title="Test Accuracy",
-        height=500
     )
     
     st.plotly_chart(fig, use_container_width=True)
@@ -1008,34 +943,6 @@ elif nav_selection == "📊 Feature Analysis":
                title="SOTA Feature Distribution (214 Total Features)")
     fig.update_traces(textposition='inside', textinfo='percent+label')
     st.plotly_chart(fig, use_container_width=True)
-    
-    # Detailed feature analysis
-    st.markdown("### 📋 Feature Category Details")
-    
-    for category, info in feature_breakdown.items():
-        st.markdown(f'<div class="sota-feature-card">', unsafe_allow_html=True)
-        st.markdown(f"#### {category} ({info['count']} features)")
-        st.markdown(f"**Description:** {info['description']}")
-        st.markdown(f"**Importance:** {info['importance']}")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Feature importance simulation
-    st.markdown("### 🎯 Simulated Feature Importance (Based on XGBoost)")
-    
-    # Simulate feature importance based on typical SER patterns
-    importance_data = {
-        'Feature Category': categories,
-        'Relative Importance': [0.35, 0.25, 0.15, 0.08, 0.10, 0.04, 0.03]  # Realistic SER importance
-    }
-    
-    importance_df = pd.DataFrame(importance_data)
-    
-    fig = px.bar(importance_df, x='Feature Category', y='Relative Importance',
-               title="Estimated Feature Category Importance in SOTA Models",
-               color='Relative Importance',
-               color_continuous_scale='viridis')
-    fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
 
 elif nav_selection == "🔬 Research Insights":
     st.markdown("## 🔬 SOTA Research Insights")
@@ -1051,97 +958,6 @@ elif nav_selection == "🔬 Research Insights":
     - **Scientific Reports 2024**: Graph Neural Networks for audio analysis
     - **IEEE TASLP 2024**: Advanced prosodic feature extraction
     - **Nature Machine Intelligence 2025**: Quantum-inspired audio processing
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Performance benchmarks
-    st.markdown("### 🏆 Performance Benchmarks")
-    
-    benchmark_data = {
-        'Dataset': ['RAVDESS', 'CREMA-D', 'TESS', 'Cross-Corpus Average'],
-        'SOTA System (Ours)': [0.824, 0.831, 0.820, 0.825],
-        'Previous SOTA (2023)': [0.785, 0.792, 0.788, 0.788],
-        'Improvement': ['+3.9%', '+3.9%', '+3.2%', '+3.7%']
-    }
-    
-    benchmark_df = pd.DataFrame(benchmark_data)
-    
-    fig = px.bar(benchmark_df, x='Dataset', y=['SOTA System (Ours)', 'Previous SOTA (2023)'],
-               title="Performance Comparison vs Previous SOTA",
-               barmode='group')
-    fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.dataframe(benchmark_df, use_container_width=True)
-    
-    # Technical innovations
-    st.markdown("### 💡 Key Technical Innovations")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown('<div class="vision-transformer">', unsafe_allow_html=True)
-        st.markdown("#### 🎨 Vision Transformer Innovation")
-        st.markdown("""
-        **Breakthrough**: First application of ViT to mel-spectrograms in production SER
-        
-        - **Input**: 224×224 RGB mel-spectrogram images
-        - **Architecture**: Pre-trained ViT-Base-Patch16-224
-        - **Features**: 50 deep visual representations
-        - **Impact**: +2.3% accuracy improvement over traditional features
-        """)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="quantum-features">', unsafe_allow_html=True)
-        st.markdown("#### ⚛️ Quantum-Inspired Processing")
-        st.markdown("""
-        **Innovation**: Novel quantum entanglement measures for audio
-        
-        - **Concept**: Audio segments as quantum-correlated states
-        - **Measures**: Entanglement, coherence, correlation matrices
-        - **Application**: Capture non-linear temporal dependencies
-        - **Result**: Enhanced emotional state discrimination
-        """)
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown('<div class="graph-neural">', unsafe_allow_html=True)
-        st.markdown("#### 🕸️ Graph Neural Network Approach")
-        st.markdown("""
-        **Method**: Visibility graph construction from audio signals
-        
-        - **Graph**: Nodes = audio samples, Edges = visibility relationships
-        - **Features**: Density, clustering, degree statistics
-        - **Insight**: Reveals hidden structural patterns in emotional speech
-        - **Validation**: Published in Scientific Reports 2024
-        """)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="advanced-analysis">', unsafe_allow_html=True)
-        st.markdown("#### 📊 Ensemble Methodology")
-        st.markdown("""
-        **Strategy**: Multi-algorithm SOTA ensemble
-        
-        - **Models**: XGBoost, LightGBM, Random Forest, Deep NN
-        - **Weighting**: Performance-based soft voting
-        - **Cross-validation**: 5-fold stratified validation
-        - **Result**: 0.834 F1-score (macro average)
-        """)
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Future directions
-    st.markdown("### 🚀 Future Research Directions")
-    
-    st.markdown('<div class="sota-feature-card">', unsafe_allow_html=True)
-    st.markdown("""
-    #### 🔮 Upcoming Enhancements (2025-2026)
-    
-    1. **Transformer-XL Integration**: Extended context for longer audio sequences
-    2. **Federated Learning**: Privacy-preserving multi-institutional training
-    3. **Real-time Optimization**: Edge deployment with <100ms latency
-    4. **Multimodal Fusion**: Integration with facial expression and text
-    5. **Few-shot Learning**: Adaptation to new emotions with minimal data
-    6. **Neuromorphic Computing**: Spike-based neural network implementation
     """)
     st.markdown('</div>', unsafe_allow_html=True)
 
