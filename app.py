@@ -1,3 +1,13 @@
+from config import DeploymentConfig
+
+config = DeploymentConfig()
+
+# Then use throughout your app:
+st.set_page_config(
+    page_title=config.APP_TITLE,
+    page_icon=config.APP_ICON,
+    layout="wide"
+)
 import streamlit as st
 import pandas as pd
 import numpy as np
