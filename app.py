@@ -1,13 +1,20 @@
+# At the top of app.py
 from config import DeploymentConfig
-
 config = DeploymentConfig()
 
-# Then use throughout your app:
-st.set_page_config(
-    page_title=config.APP_TITLE,
-    page_icon=config.APP_ICON,
-    layout="wide"
-)
+# In your sidebar
+st.sidebar.markdown(f"""
+<div style="text-align: center;">
+    <h3>{config.APP_ICON} {config.COMPANY_NAME}</h3>
+    <p>Model Accuracy: {config.MODEL_ACCURACY}%</p>
+    <p><a href="{config.LINKEDIN_PROFILE}">👨‍💻 LinkedIn</a> | 
+       <a href="{config.GITHUB_REPO}">📁 GitHub</a></p>
+</div>
+""", unsafe_allow_html=True)
+
+# In your metrics
+st.metric("Target Accuracy", f"{config.TARGET_ACCURACY}%")
+st.metric("Monthly ROI", f"${config.MONTHLY_COST_SAVINGS + config.MONTHLY_REVENUE_IMPACT:,}")
 import streamlit as st
 import pandas as pd
 import numpy as np
