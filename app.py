@@ -1,6 +1,6 @@
 # At the top of app.py
-from config import DeploymentConfig
-config = DeploymentConfig()
+from config import deployment_config
+config = deployment_config()
 
 # In your sidebar
 st.sidebar.markdown(f"""
