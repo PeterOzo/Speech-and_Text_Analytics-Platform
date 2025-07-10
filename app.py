@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
 COMPLETE SOTA SPEECH & TEXT ANALYTICS SYSTEM (2025)
-Based on Latest Research + My Model's 82.4% Accuracy Results
-Enhanced with Vision Transformer, Graph Networks, and Real Model Loading
+Based on Latest Research + Real Model Integration (82.4% Accuracy)
+Enhanced with Vision Transformer, Graph Networks, and Research Methods
 
-Author: Peter Chika Ozo-ogueji
+Author: Advanced Analytics System
 Research Papers Integrated:
 - "An enhanced speech emotion recognition using vision transformer" (2024) - 98% accuracy
 - "Speech emotion recognition via graph-based representations" (2024) - 18% improvement
 - Multiple 2024-2025 transformer and ensemble papers
+
+Usage:
+streamlit run sota_analytics_app.py
 """
 
 import streamlit as st
@@ -51,14 +54,14 @@ try:
     LIBROSA_AVAILABLE = True
 except ImportError:
     LIBROSA_AVAILABLE = False
-    st.error("❌ librosa is required for audio processing")
+    st.error("❌ librosa is required for audio processing. Install with: pip install librosa")
 
 try:
     import cv2
     CV2_AVAILABLE = True
 except ImportError:
     CV2_AVAILABLE = False
-    st.warning("⚠️ OpenCV not available, some vision features disabled")
+    st.warning("⚠️ OpenCV not available, some vision features disabled. Install with: pip install opencv-python")
 
 try:
     import xgboost as xgb
@@ -204,7 +207,7 @@ class SOTAConfig:
     HOP_LENGTH: int = 512
     DURATION: float = 3.0
     
-    # Research-Enhanced Model Performance (Your Actual Results + Research Targets)
+    # Research-Enhanced Model Performance (Actual Results + Research Targets)
     MODEL_PERFORMANCE = {
         'SOTA XGBoost (2024)': {'accuracy': 0.824, 'f1_score': 0.835, 'cv_score': 0.811},
         'SOTA LightGBM (2024)': {'accuracy': 0.814, 'f1_score': 0.829, 'cv_score': 0.814},
@@ -216,13 +219,13 @@ class SOTAConfig:
         'Research Graph Enhanced': {'accuracy': 0.85, 'f1_score': 0.86, 'cv_score': 0.83}  # Research target
     }
     
-    # Emotion Classes (8-class as in your project)
+    # Emotion Classes (8-class system)
     EMOTION_CLASSES = ['angry', 'calm', 'disgust', 'fearful', 'happy', 'neutral', 'sad', 'surprised']
     
     # Enhanced SOTA Feature Count (research-based expansion)
-    FEATURE_COUNT = 280  # 214 (your original) + 66 (research enhancements)
+    FEATURE_COUNT = 280  # 214 (original) + 66 (research enhancements)
     
-    # Dataset Info from your project + research datasets
+    # Dataset Info
     DATASET_INFO = {
         'total_samples': 10973,
         'datasets': ['RAVDESS', 'CREMA-D', 'TESS', 'EMO-DB', 'SAVEE'],
@@ -241,7 +244,7 @@ config = SOTAConfig()
 class EnhancedSOTAFeatureExtractor:
     """
     Enhanced SOTA Feature Extractor - Based on 2024-2025 Research
-    Combines your 214 features with latest research enhancements
+    Combines original 214 features with latest research enhancements
     """
     
     def __init__(self, sample_rate=22050):
@@ -261,13 +264,13 @@ class EnhancedSOTAFeatureExtractor:
                 st.warning(f"⚠️ Vision Transformer not available: {e}")
     
     def extract_enhanced_sota_features(self, audio_file_path) -> Dict[str, float]:
-        """Extract Enhanced 280 SOTA features combining your 214 + research enhancements"""
+        """Extract Enhanced 280 SOTA features combining original 214 + research enhancements"""
         if not LIBROSA_AVAILABLE:
             st.error("❌ Audio processing requires librosa")
             return {}
             
         try:
-            # Load audio (same parameters as your project)
+            # Load audio with original parameters
             audio, sr = librosa.load(audio_file_path, sr=self.sample_rate, duration=config.DURATION)
             if audio is None or len(audio) == 0:
                 return {}
@@ -277,8 +280,8 @@ class EnhancedSOTAFeatureExtractor:
             
             features = {}
             
-            # 1. YOUR ORIGINAL 214 SOTA FEATURES (keep all of these!)
-            features.update(self._extract_your_214_sota_features(audio, sr))
+            # 1. ORIGINAL 214 SOTA FEATURES (keep all!)
+            features.update(self._extract_original_214_sota_features(audio, sr))
             
             # 2. RESEARCH ENHANCEMENT: Improved Vision Transformer (2024)
             if self.vision_transformer_available:
@@ -306,18 +309,18 @@ class EnhancedSOTAFeatureExtractor:
             st.error(f"❌ Enhanced feature extraction failed: {e}")
             return {}
     
-    def _extract_your_214_sota_features(self, audio, sr):
-        """Your original 214 SOTA features (keep exactly as they were)"""
+    def _extract_original_214_sota_features(self, audio, sr):
+        """Original 214 SOTA features"""
         features = {}
         
         try:
-            # Enhanced MFCC (most important for SER in your research)
+            # Enhanced MFCC (most important for SER)
             mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=config.N_MFCC, n_fft=config.N_FFT, hop_length=config.HOP_LENGTH)
             mfcc_delta = librosa.feature.delta(mfccs)
             mfcc_delta2 = librosa.feature.delta(mfccs, order=2)
             
             for i in range(config.N_MFCC):
-                # Comprehensive MFCC statistics (your implementation)
+                # Comprehensive MFCC statistics
                 features[f'mfcc_{i}_mean'] = np.mean(mfccs[i])
                 features[f'mfcc_{i}_std'] = np.std(mfccs[i])
                 features[f'mfcc_{i}_max'] = np.max(mfccs[i])
@@ -327,7 +330,7 @@ class EnhancedSOTAFeatureExtractor:
                 features[f'mfcc_delta_{i}_mean'] = np.mean(mfcc_delta[i])
                 features[f'mfcc_delta2_{i}_mean'] = np.mean(mfcc_delta2[i])
             
-            # Advanced spectral features (your implementation)
+            # Advanced spectral features
             spectral_centroids = librosa.feature.spectral_centroid(y=audio, sr=sr)[0]
             spectral_rolloff = librosa.feature.spectral_rolloff(y=audio, sr=sr)[0]
             spectral_bandwidth = librosa.feature.spectral_bandwidth(y=audio, sr=sr)[0]
@@ -344,27 +347,27 @@ class EnhancedSOTAFeatureExtractor:
                 features[f'{name}_max'] = np.max(feature_array)
                 features[f'{name}_skew'] = stats.skew(feature_array)
             
-            # Enhanced chroma features (your implementation)
+            # Enhanced chroma features
             chroma = librosa.feature.chroma_stft(y=audio, sr=sr, n_chroma=12)
             for i in range(12):
                 features[f'chroma_{i}_mean'] = np.mean(chroma[i])
                 features[f'chroma_{i}_std'] = np.std(chroma[i])
             
-            # Your Vision Transformer features (50 features)
+            # Original Vision Transformer features (50 features)
             if self.vision_transformer_available:
-                vit_features_original = self._extract_your_original_vit_features(audio, sr)
+                vit_features_original = self._extract_original_vit_features(audio, sr)
                 features.update(vit_features_original)
             
-            # Your Graph-based features (6 features)
-            graph_features_original = self._extract_your_original_graph_features(audio)
+            # Original Graph-based features (6 features)
+            graph_features_original = self._extract_original_graph_features(audio)
             features.update(graph_features_original)
             
-            # Your Prosodic features (11 features)
-            prosodic_features = self._extract_your_prosodic_features(audio, sr)
+            # Original Prosodic features (11 features)
+            prosodic_features = self._extract_prosodic_features(audio, sr)
             features.update(prosodic_features)
             
-            # Your Quantum-inspired features (3 features)
-            quantum_features = self._extract_your_quantum_features(audio)
+            # Original Quantum-inspired features (3 features)
+            quantum_features = self._extract_quantum_features(audio)
             features.update(quantum_features)
                 
         except Exception as e:
@@ -372,8 +375,8 @@ class EnhancedSOTAFeatureExtractor:
             
         return features
     
-    def _extract_your_original_vit_features(self, audio, sr):
-        """Your original Vision Transformer implementation (50 features)"""
+    def _extract_original_vit_features(self, audio, sr):
+        """Original Vision Transformer implementation (50 features)"""
         features = {}
         
         if not self.vision_transformer_available:
@@ -383,29 +386,34 @@ class EnhancedSOTAFeatureExtractor:
             return features
         
         try:
-            # Your original ViT implementation
+            # Original ViT implementation
             mel_spec = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=config.N_MELS, n_fft=config.N_FFT, hop_length=config.HOP_LENGTH)
             mel_db = librosa.power_to_db(mel_spec, ref=np.max)
             
             # Normalize to 0-255 range
             mel_normalized = ((mel_db - mel_db.min()) / (mel_db.max() - mel_db.min()) * 255).astype(np.uint8)
             
-            # Resize to 224x224 for ViT
-            mel_resized = cv2.resize(mel_normalized, (224, 224))
-            
-            # Convert to RGB (3 channels)
-            mel_rgb = np.stack([mel_resized] * 3, axis=-1)
-            
-            # Prepare for ViT
-            mel_tensor = torch.from_numpy(mel_rgb).float().permute(2, 0, 1).unsqueeze(0) / 255.0
-            
-            # Extract ViT features
-            with torch.no_grad():
-                vit_features = self.vit_model(mel_tensor).squeeze().numpy()
-            
-            # Add ViT features (first 50 as in your project)
-            for i, feat in enumerate(vit_features[:50]):
-                features[f'original_vit_feature_{i}'] = float(feat)
+            if CV2_AVAILABLE:
+                # Resize to 224x224 for ViT
+                mel_resized = cv2.resize(mel_normalized, (224, 224))
+                
+                # Convert to RGB (3 channels)
+                mel_rgb = np.stack([mel_resized] * 3, axis=-1)
+                
+                # Prepare for ViT
+                mel_tensor = torch.from_numpy(mel_rgb).float().permute(2, 0, 1).unsqueeze(0) / 255.0
+                
+                # Extract ViT features
+                with torch.no_grad():
+                    vit_features = self.vit_model(mel_tensor).squeeze().numpy()
+                
+                # Add ViT features (first 50)
+                for i, feat in enumerate(vit_features[:50]):
+                    features[f'original_vit_feature_{i}'] = float(feat)
+            else:
+                # Fallback without CV2
+                for i in range(50):
+                    features[f'original_vit_feature_{i}'] = 0.0
                 
         except Exception as e:
             st.warning(f"Original Vision Transformer feature extraction warning: {e}")
@@ -415,12 +423,12 @@ class EnhancedSOTAFeatureExtractor:
         
         return features
     
-    def _extract_your_original_graph_features(self, audio):
-        """Your original graph-based features (6 features)"""
+    def _extract_original_graph_features(self, audio):
+        """Original graph-based features (6 features)"""
         features = {}
         
         try:
-            # Your original visibility graph implementation
+            # Original visibility graph implementation
             n_samples = min(len(audio), 1000)
             audio_subset = audio[:n_samples]
             
@@ -454,12 +462,12 @@ class EnhancedSOTAFeatureExtractor:
         
         return features
     
-    def _extract_your_prosodic_features(self, audio, sr):
-        """Your original prosodic features (11 features)"""
+    def _extract_prosodic_features(self, audio, sr):
+        """Original prosodic features (11 features)"""
         features = {}
         
         try:
-            # Your original F0 extraction
+            # F0 extraction
             f0 = librosa.yin(audio, fmin=50, fmax=400, threshold=0.1)
             f0_clean = f0[f0 > 0]
             
@@ -478,7 +486,7 @@ class EnhancedSOTAFeatureExtractor:
                            'original_f0_shimmer', 'original_f0_slope', 'original_f0_curvature']:
                     features[feat] = 0.0
             
-            # Your original energy features
+            # Energy features
             rms = librosa.feature.rms(y=audio)[0]
             features['original_energy_mean'] = np.mean(rms)
             features['original_energy_std'] = np.std(rms)
@@ -486,7 +494,7 @@ class EnhancedSOTAFeatureExtractor:
             features['original_energy_kurtosis'] = stats.kurtosis(rms)
             
         except Exception as e:
-            st.warning(f"Original prosodic feature extraction warning: {e}")
+            st.warning(f"Prosodic feature extraction warning: {e}")
             for feat in ['original_f0_mean', 'original_f0_std', 'original_f0_range', 'original_f0_jitter', 
                        'original_f0_shimmer', 'original_f0_slope', 'original_f0_curvature', 
                        'original_energy_mean', 'original_energy_std', 'original_energy_skew', 'original_energy_kurtosis']:
@@ -494,12 +502,12 @@ class EnhancedSOTAFeatureExtractor:
         
         return features
     
-    def _extract_your_quantum_features(self, audio):
-        """Your original quantum-inspired features (3 features)"""
+    def _extract_quantum_features(self, audio):
+        """Original quantum-inspired features (3 features)"""
         features = {}
         
         try:
-            # Your original quantum-inspired implementation
+            # Quantum-inspired implementation
             n_segments = 8
             segment_length = len(audio) // n_segments
             
@@ -517,7 +525,7 @@ class EnhancedSOTAFeatureExtractor:
             features['original_quantum_coherence'] = np.sum(entanglement_scores) / len(entanglement_scores)
             
         except Exception as e:
-            st.warning(f"Original quantum feature extraction warning: {e}")
+            st.warning(f"Quantum feature extraction warning: {e}")
             for feat in ['original_quantum_entanglement_mean', 'original_quantum_entanglement_std', 'original_quantum_coherence']:
                 features[feat] = 0.0
         
@@ -534,7 +542,6 @@ class EnhancedSOTAFeatureExtractor:
         
         try:
             # Research enhancement: Non-overlapping patch-based feature extraction
-            # Optimal parameters from 2024 research
             mel_spec = librosa.feature.melspectrogram(
                 y=audio, sr=sr, 
                 n_mels=128,  # Research optimal
@@ -665,7 +672,6 @@ class EnhancedSOTAFeatureExtractor:
         
         try:
             # Research enhancement: Multi-scale temporal analysis
-            # Create multiple time scales for analysis
             scales = [512, 1024, 2048]  # Different window sizes
             
             for scale_idx, window_size in enumerate(scales):
@@ -747,7 +753,6 @@ class EnhancedSOTAFeatureExtractor:
         
         try:
             # Research enhancement: Speaker-based emotional motif
-            # Extract prosodic segments for motif analysis
             segment_size = len(audio) // 8
             segments = []
             
@@ -833,7 +838,7 @@ class EnhancedSOTAFeatureExtractor:
             return 0.0
     
     def _preprocess_audio(self, audio: np.ndarray) -> np.ndarray:
-        """Audio preprocessing as in your SOTA project"""
+        """Audio preprocessing"""
         audio = np.nan_to_num(audio, nan=0.0, posinf=0.0, neginf=0.0)
         
         if np.max(np.abs(audio)) > 0:
@@ -868,8 +873,7 @@ class EnhancedSOTAFeatureExtractor:
 
 class RealSOTAEmotionClassifier:
     """
-    Real SOTA Emotion Classifier - Uses Your Actual Trained Models
-    Fixed to eliminate simulation and use real predictions
+    Real SOTA Emotion Classifier - Uses Actual Trained Models or Research-Based Prediction
     """
     
     def __init__(self, model_path="./models/"):
@@ -881,7 +885,7 @@ class RealSOTAEmotionClassifier:
         self.model_path = model_path
         self.using_actual_models = False
         
-        # Try to load your actual models first
+        # Try to load actual models first
         self._try_load_actual_models()
         
         # If actual models not available, initialize research-based fallback
@@ -889,11 +893,11 @@ class RealSOTAEmotionClassifier:
             self._initialize_research_fallback()
     
     def _try_load_actual_models(self):
-        """Try to load your actual trained models with 82.4% accuracy"""
+        """Try to load actual trained models with 82.4% accuracy"""
         try:
             import os
             if os.path.exists(self.model_path):
-                # Expected model files from your training
+                # Expected model files from training
                 model_files = {
                     'SOTA XGBoost (2024)': 'sota_xgboost_2024_model.pkl',
                     'SOTA LightGBM (2024)': 'sota_lightgbm_2024_model.pkl',
@@ -954,7 +958,7 @@ class RealSOTAEmotionClassifier:
     
     def _initialize_research_models(self):
         """Initialize research-based models for fallback"""
-        # These are research-validated architectures
+        # Research-validated architectures
         if XGBOOST_AVAILABLE:
             self.models['Research XGBoost (82.4% target)'] = xgb.XGBClassifier(
                 n_estimators=600,
@@ -1021,14 +1025,14 @@ class RealSOTAEmotionClassifier:
         return True
     
     def predict_emotion_real(self, features: Dict[str, float]) -> Dict[str, Any]:
-        """Use actual models or research-based prediction - NO MORE SIMULATION"""
+        """Use actual models or research-based prediction"""
         if not features:
             return None
         
         # Convert features to array
         feature_vector = np.array(list(features.values())).reshape(1, -1)
         
-        # Ensure correct feature count (enhanced to 280)
+        # Ensure correct feature count
         if len(features) < config.FEATURE_COUNT:
             padding = config.FEATURE_COUNT - len(features)
             feature_vector = np.pad(feature_vector, ((0, 0), (0, padding)), mode='constant')
@@ -1036,15 +1040,15 @@ class RealSOTAEmotionClassifier:
             feature_vector = feature_vector[:, :config.FEATURE_COUNT]
         
         if self.using_actual_models:
-            # Use your actual trained models
+            # Use actual trained models
             return self._predict_with_actual_models(feature_vector, features)
         else:
-            # Use research-based prediction (not simulation)
+            # Use research-based prediction
             return self._predict_with_research_models(feature_vector, features)
     
     def _predict_with_actual_models(self, feature_vector, original_features):
-        """Use your actual 82.4% accuracy models"""
-        # Apply your actual preprocessing
+        """Use actual 82.4% accuracy models"""
+        # Apply actual preprocessing
         if self.feature_selector:
             try:
                 feature_vector = self.feature_selector.transform(feature_vector)
@@ -1060,7 +1064,7 @@ class RealSOTAEmotionClassifier:
         model_predictions = {}
         ensemble_scores = np.zeros(len(config.EMOTION_CLASSES))
         
-        # Your actual model performance weights
+        # Actual model performance weights
         model_weights = {
             'SOTA XGBoost (2024)': 0.824,
             'SOTA LightGBM (2024)': 0.814,
@@ -1072,7 +1076,7 @@ class RealSOTAEmotionClassifier:
         
         for model_name, model in self.models.items():
             try:
-                # Get prediction from your actual model
+                # Get prediction from actual model
                 prediction_idx = model.predict(feature_vector)[0]
                 probabilities = model.predict_proba(feature_vector)[0]
                 
@@ -1118,15 +1122,14 @@ class RealSOTAEmotionClassifier:
     def _predict_with_research_models(self, feature_vector, original_features):
         """Research-based prediction using validated ML approaches"""
         
-        # Advanced feature analysis based on your 214 + 66 enhanced features
+        # Advanced feature analysis based on 214 + 66 enhanced features
         features_array = feature_vector.flatten()
         
         # Research-validated feature importance analysis
         emotion_scores = np.zeros(len(config.EMOTION_CLASSES))
-        confidence_factors = []
         
         # 1. MFCC Analysis (most important in SER research)
-        mfcc_features = features_array[:104]  # Your MFCC features
+        mfcc_features = features_array[:104]  # MFCC features
         mfcc_energy = np.mean(np.abs(mfcc_features))
         mfcc_variance = np.var(mfcc_features)
         mfcc_spectral_centroid = np.mean(mfcc_features[52:65])  # Spectral features
@@ -1150,8 +1153,6 @@ class RealSOTAEmotionClassifier:
         speaker_consistency = np.std(motif_features)
         
         # Research-based emotion classification logic
-        # Based on validated patterns from SER literature
-        
         # High arousal emotions (angry, happy, surprised, fearful)
         arousal_score = (mfcc_energy * 0.4 + vit_energy * 0.3 + attention_energy * 0.3)
         
@@ -1177,17 +1178,17 @@ class RealSOTAEmotionClassifier:
                 emotion_scores[6] += 0.4  # sad
                 emotion_scores[2] += 0.2  # disgust
         
-        # Complexity adjustments (research finding)
+        # Complexity adjustments
         if complexity_score > 0.1:
             emotion_scores[2] += 0.1  # disgust
             emotion_scores[3] += 0.1  # fearful
         
-        # Graph-based adjustments (2024 research enhancement)
+        # Graph-based adjustments
         if graph_density > 0.1:
-            emotion_scores[0] += 0.1  # angry (high graph density)
+            emotion_scores[0] += 0.1  # angry
             emotion_scores[4] += 0.1  # happy
         
-        # Vision Transformer adjustments (2024 breakthrough)
+        # Vision Transformer adjustments
         if vit_complexity > 0.15:
             emotion_scores[7] += 0.15  # surprised
             emotion_scores[4] += 0.1   # happy
@@ -1197,7 +1198,6 @@ class RealSOTAEmotionClassifier:
         if np.sum(emotion_scores) > 0:
             emotion_scores = emotion_scores / np.sum(emotion_scores)
         else:
-            # Fallback to neutral if no clear emotion detected
             emotion_scores[5] = 1.0  # neutral
         
         # Apply research-based confidence scaling
@@ -1206,11 +1206,11 @@ class RealSOTAEmotionClassifier:
         # Confidence boosting based on feature agreement
         feature_agreement = 1.0
         if arousal_score > 0.1 and valence_score > 0.1:
-            feature_agreement *= 1.2  # Features agree on high arousal + positive valence
+            feature_agreement *= 1.2
         if complexity_score > 0.05:
-            feature_agreement *= 1.1  # Complexity adds confidence
+            feature_agreement *= 1.1
         
-        # Research-validated confidence scaling (based on your 82.4% accuracy)
+        # Research-validated confidence scaling
         final_confidence = min(base_confidence * feature_agreement * 0.82, 0.95)
         
         predicted_idx = np.argmax(emotion_scores)
@@ -1219,7 +1219,6 @@ class RealSOTAEmotionClassifier:
         # Create model predictions for display
         model_predictions = {}
         
-        # Show research-based analysis for each model type
         research_models = {
             'Research XGBoost (82.4% target)': {'confidence': final_confidence * 0.98},
             'Research LightGBM (81.4% target)': {'confidence': final_confidence * 0.96},
@@ -1258,10 +1257,10 @@ class RealSOTAEmotionClassifier:
         }
     
     def _generate_actual_model_analysis(self, prediction, confidence, model_predictions):
-        """Generate analysis based on your actual model results"""
+        """Generate analysis based on actual model results"""
         analysis = {}
         
-        # Confidence based on your actual 82.4% performance
+        # Confidence based on actual 82.4% performance
         if confidence > 0.82:
             analysis['confidence_level'] = "Excellent"
             analysis['confidence_interpretation'] = f"Confidence exceeds your SOTA XGBoost performance (82.4%)"
@@ -1335,7 +1334,7 @@ class RealSOTAEmotionClassifier:
 
 # Enhanced Text Analytics Engine
 class EnhancedTextAnalyticsEngine:
-    """Enhanced Real Text Analytics Engine with 2024-2025 research improvements"""
+    """Enhanced Text Analytics Engine with 2024-2025 research improvements"""
     
     def __init__(self):
         self.text_analytics_available = TEXT_ANALYTICS_AVAILABLE
@@ -1443,7 +1442,7 @@ class EnhancedTextAnalyticsEngine:
             'surprise': 0.0,
             'disgust': 0.0,
             'neutral': 0.0,
-            'calm': 0.0  # Added for consistency with audio emotions
+            'calm': 0.0
         }
         
         if not text:
@@ -1528,7 +1527,7 @@ class EnhancedTextAnalyticsEngine:
         return features
     
     def _analyze_enhanced_topics_keywords(self, text: str) -> Dict[str, Any]:
-        """Enhanced topic and keyword analysis with research methods"""
+        """Enhanced topic and keyword analysis"""
         results = {
             'keywords': [],
             'phrases': [],
@@ -1576,7 +1575,7 @@ class EnhancedTextAnalyticsEngine:
         return results
     
     def _analyze_enhanced_readability(self, text: str) -> Dict[str, float]:
-        """Enhanced readability analysis with research metrics"""
+        """Enhanced readability analysis"""
         readability = {
             'flesch_reading_ease': 0.0,
             'flesch_kincaid_grade': 0.0,
@@ -1640,7 +1639,7 @@ class EnhancedTextAnalyticsEngine:
             # Simulate semantic embedding analysis
             features['semantic_embedding_norm'] = np.sqrt(len(set(words))) / len(words)
             
-            # Contextual coherence (word repetition patterns)
+            # Contextual coherence
             word_counts = Counter(word.lower() for word in words)
             features['contextual_coherence'] = len(word_counts) / len(words)
             
@@ -1842,39 +1841,6 @@ class EnhancedTextAnalyticsEngine:
         }
         return lexicon
 
-# Utility Functions
-def export_results_to_json(results: Dict) -> str:
-    """Export results to JSON format"""
-    return json.dumps(results, indent=2, default=str)
-
-def save_your_models_for_streamlit(cv_results, scaler, feature_selector, label_encoder, save_path="./models/"):
-    """Add this to your training script to save models for Streamlit"""
-    import os
-    os.makedirs(save_path, exist_ok=True)
-    
-    # Save your best models with proper naming
-    for model_name, results in cv_results.items():
-        if 'model' in results:
-            model = results['model']
-            # Clean filename
-            clean_name = model_name.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('-', '_')
-            filename = f"{clean_name}_model.pkl"
-            
-            joblib.dump(model, os.path.join(save_path, filename))
-            
-            accuracy = results.get('test_accuracy', 0)
-            print(f"✅ Saved {model_name} (Accuracy: {accuracy:.1%})")
-    
-    # Save preprocessing components
-    joblib.dump(scaler, os.path.join(save_path, 'scaler.pkl'))
-    joblib.dump(feature_selector, os.path.join(save_path, 'feature_selector.pkl'))
-    joblib.dump(label_encoder, os.path.join(save_path, 'label_encoder.pkl'))
-    
-    print(f"\n🎯 All models saved to {save_path}")
-    print("📱 Now your Streamlit app will use REAL predictions instead of simulation!")
-    
-    return save_path
-
 # Initialize Enhanced Session State
 if 'feature_extractor' not in st.session_state:
     st.session_state.feature_extractor = EnhancedSOTAFeatureExtractor()
@@ -1888,38 +1854,7 @@ if 'classifier' not in st.session_state:
 if 'models_loaded' not in st.session_state:
     st.session_state.models_loaded = False
 
-# Main Application
-def main():
-    # Enhanced Header
-    st.markdown("""
-    <div class="main-header">
-        <h1>🎯 SOTA Speech & Text Analytics Platform (2024-2025)</h1>
-        <p><strong>Enhanced with Latest Research + Your 82.4% Accuracy Results</strong></p>
-        <p><em>280 Enhanced Features | Vision Transformer | Graph Networks | Real Model Loading</em></p>
-        <p><strong>Research Integration: 98% ViT Accuracy + 18% Graph Improvement + Transformer Attention</strong></p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Enhanced System Status
-    display_enhanced_system_status()
-    
-    # Sidebar Navigation
-    setup_enhanced_sidebar()
-    
-    # Main Content Router
-    nav_selection = st.session_state.get('nav_selection', '🏠 Dashboard')
-    
-    if nav_selection == '🏠 Dashboard':
-        show_enhanced_dashboard()
-    elif nav_selection == '🎤 Audio Analysis':
-        show_enhanced_audio_analysis()
-    elif nav_selection == '📝 Text Analytics':
-        show_enhanced_text_analytics()
-    elif nav_selection == '📊 Model Performance':
-        show_enhanced_model_performance()
-    elif nav_selection == '🔬 Research Integration':
-        show_research_integration()
-
+# Main Application Functions
 def display_enhanced_system_status():
     """Display enhanced system status with research components"""
     st.markdown("### 📋 Enhanced SOTA System Status (2024-2025 Research)")
@@ -2103,37 +2038,12 @@ def show_enhanced_dashboard():
                 barmode='group', height=500)
     fig.update_layout(showlegend=True, xaxis_tickangle=-45)
     
-    # Add horizontal line for your 82.4% achievement
+    # Add horizontal line for 82.4% achievement
     fig.add_hline(y=0.824, line_dash="dash", line_color="red", 
                   annotation_text="Your 82.4% Achievement")
     
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Feature enhancement breakdown
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown('<div class="professional-card">', unsafe_allow_html=True)
-        st.markdown("#### 🔧 Feature Enhancement Breakdown")
-        st.markdown("- **Original SOTA Features**: 214")
-        st.markdown("- **Enhanced ViT Features**: +16 (research-optimal)")
-        st.markdown("- **Statistical Graph Features**: +15 (2024 paper)")
-        st.markdown("- **Transformer Attention**: +20 (2024-2025)")
-        st.markdown("- **Speaker Motif Features**: +15 (research)")
-        st.markdown(f"- **Total Enhanced**: {config.FEATURE_COUNT} features")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown('<div class="professional-card">', unsafe_allow_html=True)
-        st.markdown("#### 🎯 Expected Improvements")
-        st.markdown("- **Vision Transformer**: +3-5% accuracy potential")
-        st.markdown("- **Graph Enhancement**: +2-3% from statistical graphs")
-        st.markdown("- **Transformer Attention**: +1-2% from multi-scale analysis")
-        st.markdown("- **Speaker Motif**: +1-2% from research validation")
-        st.markdown("- **Combined Target**: **85-90% accuracy**")
-        st.markdown("- **Research Validation**: Multiple 2024 papers")
-        st.markdown('</div>', unsafe_allow_html=True)
 
 def show_enhanced_audio_analysis():
     """Enhanced audio analysis with research improvements"""
@@ -2156,7 +2066,7 @@ def show_enhanced_audio_analysis():
     else:
         st.info("📚 **Using research-based prediction** (save your models for real predictions)")
     
-    st.markdown(f"**Enhanced Features**: {config.FEATURE_COUNT} (your 214 + 66 research enhancements)")
+    st.markdown(f"**Enhanced Features**: {config.FEATURE_COUNT} (original 214 + 66 research enhancements)")
     st.markdown("**Research Integration**: 2024 ViT + Graph Networks + Transformer Attention")
     
     uploaded_file = st.file_uploader(
@@ -2198,7 +2108,7 @@ def analyze_audio_with_enhanced_models(audio_file):
             transformer_count = sum(1 for k in features.keys() if k.startswith('transformer_'))
             motif_count = sum(1 for k in features.keys() if k.startswith('speaker_motif_'))
             
-            st.write(f"- **Your Original SOTA Features**: {original_count}")
+            st.write(f"- **Original SOTA Features**: {original_count}")
             st.write(f"- **Enhanced ViT Features**: {enhanced_vit_count} (2024 research)")
             st.write(f"- **Statistical Graph Features**: {stat_graph_count} (2024 paper)")
             st.write(f"- **Transformer Attention**: {transformer_count} (2024-2025)")
@@ -2310,65 +2220,6 @@ def display_enhanced_audio_results(prediction_result, features):
     )
     
     st.plotly_chart(fig, use_container_width=True)
-    
-    # Enhanced individual model predictions
-    st.markdown("### 🤖 Enhanced Model Predictions")
-    
-    model_cols = st.columns(min(len(prediction_result['model_predictions']), 4))
-    for i, (model_name, pred_info) in enumerate(prediction_result['model_predictions'].items()):
-        with model_cols[i % len(model_cols)]:
-            st.markdown('<div class="professional-card">', unsafe_allow_html=True)
-            st.markdown(f"**{model_name}**")
-            st.metric("Prediction", pred_info['prediction'].title())
-            st.metric("Confidence", f"{pred_info['confidence']:.3f}")
-            
-            if prediction_result.get('using_actual_models'):
-                st.caption("✅ Your Real Model")
-            else:
-                st.caption("📚 Research-Based")
-                
-            st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Enhanced feature importance analysis
-    with st.expander("🔬 Advanced Feature Analysis"):
-        st.markdown("### Feature Category Analysis")
-        
-        # Analyze features by category
-        categories = {
-            'MFCC & Spectral': [k for k in features.keys() if k.startswith(('mfcc_', 'spectral_', 'chroma_'))],
-            'Vision Transformer': [k for k in features.keys() if k.startswith(('original_vit_', 'enhanced_vit_'))],
-            'Graph Networks': [k for k in features.keys() if k.startswith(('original_graph_', 'stat_graph_'))],
-            'Transformer Attention': [k for k in features.keys() if k.startswith('transformer_')],
-            'Speaker Motif': [k for k in features.keys() if k.startswith('speaker_motif_')],
-            'Prosodic & Energy': [k for k in features.keys() if k.startswith(('original_f0_', 'original_energy_'))]
-        }
-        
-        category_stats = []
-        for category, feature_keys in categories.items():
-            if feature_keys:
-                values = [features[k] for k in feature_keys]
-                category_stats.append({
-                    'Category': category,
-                    'Feature Count': len(feature_keys),
-                    'Mean Value': np.mean(values),
-                    'Std Dev': np.std(values),
-                    'Max Value': np.max(values),
-                    'Energy': np.mean(np.abs(values))
-                })
-        
-        if category_stats:
-            df_categories = pd.DataFrame(category_stats)
-            st.dataframe(df_categories, use_container_width=True)
-            
-            # Create feature category energy plot
-            fig_energy = px.bar(
-                df_categories, x='Category', y='Energy',
-                title="Feature Category Energy Analysis",
-                color='Energy',
-                color_continuous_scale='plasma'
-            )
-            fig_energy.update_layout(height=300, xaxis_tickangle=-45)
-            st.plotly_chart(fig_energy, use_container_width=True)
 
 def show_enhanced_text_analytics():
     """Enhanced text analytics interface"""
@@ -2491,73 +2342,6 @@ def display_enhanced_text_results(results, original_text):
             st.plotly_chart(fig_emotions, use_container_width=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Research Enhancement: Transformer Features
-    if 'transformer_features' in results:
-        st.markdown('<div class="research-highlight">', unsafe_allow_html=True)
-        st.markdown("### 🤖 Transformer-Inspired Text Analysis")
-        st.markdown("**Research Enhancement**: 2024-2025 transformer techniques applied to text")
-        
-        transformer_features = results['transformer_features']
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("Attention Score", f"{transformer_features.get('attention_score', 0):.3f}")
-        with col2:
-            st.metric("Semantic Norm", f"{transformer_features.get('semantic_embedding_norm', 0):.3f}")
-        with col3:
-            st.metric("Coherence", f"{transformer_features.get('contextual_coherence', 0):.3f}")
-        with col4:
-            st.metric("Info Density", f"{transformer_features.get('information_density', 0):.3f}")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Enhanced Linguistic Analysis
-    if 'linguistic' in results:
-        st.markdown('<div class="analysis-card">', unsafe_allow_html=True)
-        st.markdown("### 🔤 Enhanced Linguistic Analysis")
-        
-        linguistic = results['linguistic']
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**Traditional Metrics:**")
-            st.metric("Lexical Diversity", f"{linguistic.get('lexical_diversity', 0):.3f}")
-            st.metric("Function Word Ratio", f"{linguistic.get('function_word_ratio', 0):.3f}")
-            st.metric("Complex Word Ratio", f"{linguistic.get('complex_word_ratio', 0):.3f}")
-        
-        with col2:
-            st.markdown("**Research Enhancements:**")
-            st.metric("Emotional Intensity", f"{linguistic.get('emotional_intensity', 0):.3f}")
-            st.metric("Semantic Coherence", f"{linguistic.get('semantic_coherence', 0):.3f}")
-            st.metric("Questions", linguistic.get('question_count', 0))
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Enhanced Topics and Keywords
-    if 'topics' in results:
-        st.markdown('<div class="professional-card">', unsafe_allow_html=True)
-        st.markdown("### 🏷️ Enhanced Topic & Keyword Analysis")
-        
-        topics = results['topics']
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if topics.get('keywords'):
-                st.markdown("**Enhanced Keywords:**")
-                for i, keyword in enumerate(topics['keywords'][:5], 1):
-                    st.markdown(f"{i}. {keyword}")
-        
-        with col2:
-            st.markdown("**Research Metrics:**")
-            st.metric("Topic Coherence", f"{topics.get('topic_coherence', 0):.3f}")
-            st.metric("Semantic Density", f"{topics.get('semantic_density', 0):.3f}")
-        
-        if topics.get('phrases'):
-            st.markdown("**Key Phrases:**")
-            st.write(", ".join(topics['phrases'][:5]))
-        
-        st.markdown('</div>', unsafe_allow_html=True)
 
 def show_enhanced_model_performance():
     """Enhanced model performance with research comparisons"""
@@ -2583,65 +2367,6 @@ def show_enhanced_model_performance():
     
     df_performance = pd.DataFrame(perf_data)
     st.dataframe(df_performance, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Performance comparison visualization
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Your achievements
-        st.markdown('<div class="analysis-card">', unsafe_allow_html=True)
-        st.markdown("#### 🏆 Your Achievements")
-        your_models = [row for row in perf_data if row['Type'] == 'Your Achievement']
-        for model in your_models:
-            st.markdown(f"**{model['Model']}**: {model['Accuracy']} accuracy")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with col2:
-        # Research targets
-        st.markdown('<div class="research-highlight">', unsafe_allow_html=True)
-        st.markdown("#### 🔬 Research Targets")
-        research_models = [row for row in perf_data if row['Type'] == 'Research Target']
-        for model in research_models:
-            st.markdown(f"**{model['Model']}**: {model['Accuracy']} potential")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Feature enhancement impact
-    st.markdown('<div class="professional-card">', unsafe_allow_html=True)
-    st.markdown("### 🔧 Feature Enhancement Impact Analysis")
-    
-    feature_impact = {
-        'Original Features (214)': {'accuracy': 0.824, 'description': 'Your SOTA XGBoost achievement'},
-        'Enhanced ViT (+16)': {'accuracy': 0.845, 'description': 'Potential +2.1% from 2024 research'},
-        'Statistical Graphs (+15)': {'accuracy': 0.858, 'description': 'Potential +1.3% from graph networks'},
-        'Transformer Attention (+20)': {'accuracy': 0.868, 'description': 'Potential +1.0% from attention'},
-        'Speaker Motif (+15)': {'accuracy': 0.878, 'description': 'Potential +1.0% from motif classification'},
-        'Combined Enhancement (280)': {'accuracy': 0.885, 'description': 'Target: 88.5% with all enhancements'}
-    }
-    
-    impact_data = []
-    for feature_set, info in feature_impact.items():
-        impact_data.append({
-            'Feature Set': feature_set,
-            'Expected Accuracy': f"{info['accuracy']:.1%}",
-            'Description': info['description']
-        })
-    
-    df_impact = pd.DataFrame(impact_data)
-    st.dataframe(df_impact, use_container_width=True)
-    
-    # Create improvement trajectory chart
-    fig_trajectory = px.line(
-        df_impact, x='Feature Set', y=[info['accuracy'] for info in feature_impact.values()],
-        title="Feature Enhancement Trajectory",
-        markers=True
-    )
-    fig_trajectory.update_layout(height=400, xaxis_tickangle=-45)
-    fig_trajectory.add_hline(y=0.824, line_dash="dash", line_color="red", 
-                            annotation_text="Your Current Achievement (82.4%)")
-    fig_trajectory.add_hline(y=0.90, line_dash="dash", line_color="green", 
-                            annotation_text="Research Target (90%)")
-    st.plotly_chart(fig_trajectory, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 def show_research_integration():
@@ -2691,302 +2416,90 @@ def show_research_integration():
                 st.markdown(f"**Impact**: {paper['impact']}")
     
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Implementation details
-    st.markdown('<div class="professional-card">', unsafe_allow_html=True)
-    st.markdown("### 🔧 Implementation Details")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("#### Vision Transformer Enhancements")
-        st.markdown("- **Patch Size**: 32 (research optimal)")
-        st.markdown("- **Model Dimension**: 128")
-        st.markdown("- **Activation**: GELU (superior to ReLU)")
-        st.markdown("- **Preprocessing**: Enhanced contrast + blur")
-        st.markdown("- **Features**: +16 enhanced ViT features")
-        
-        st.markdown("#### Graph Network Enhancements")
-        st.markdown("- **Structural Graphs**: Visibility-based (your method)")
-        st.markdown("- **Statistical Graphs**: Correlation-based (research)")
-        st.markdown("- **Speaker Motif**: Mean, std, skew, kurtosis")
-        st.markdown("- **Features**: +15 statistical graph features")
-    
-    with col2:
-        st.markdown("#### Transformer Attention")
-        st.markdown("- **Multi-scale Analysis**: 3 temporal scales")
-        st.markdown("- **Cross-attention**: Segment-to-segment")
-        st.markdown("- **Global Attention**: Full sequence modeling")
-        st.markdown("- **Features**: +20 attention features")
-        
-        st.markdown("#### Speaker Motif Classification")
-        st.markdown("- **Statistical Moments**: 4 moments per feature")
-        st.markdown("- **Emotional Identity**: Unique per speaker")
-        st.markdown("- **Data Balance**: Addresses imbalance (+20% improvement)")
-        st.markdown("- **Features**: +15 motif features")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Research validation
-    st.markdown('<div class="analysis-card">', unsafe_allow_html=True)
-    st.markdown("### ✅ Research Validation")
-    
-    validation_points = [
-        "Your 82.4% XGBoost accuracy matches research-level performance",
-        "Your 214 SOTA features align with 2024 best practices",
-        "Your Vision Transformer + Graph approach validated by multiple papers",
-        "Your ensemble methodology confirmed by recent research",
-        "Enhanced features could realistically achieve 85-90% accuracy",
-        "Cross-corpus validation approach matches SOTA standards"
-    ]
-    
-    for point in validation_points:
-        st.markdown(f"✅ {point}")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Next steps
-    st.markdown('<div class="warning-card">', unsafe_allow_html=True)
-    st.markdown("### 🎯 Next Steps for 85-90% Accuracy")
-    
-    next_steps = [
-        "**Train Enhanced Models**: Use the 280 enhanced features to train new models",
-        "**Implement Speaker Motif**: Apply speaker-based motif classification",
-        "**Vision Transformer Optimization**: Fine-tune ViT with research parameters",
-        "**Cross-Attention Integration**: Implement multi-modal attention mechanisms",
-        "**Data Augmentation**: Apply research-validated augmentation techniques",
-        "**Ensemble Enhancement**: Create weighted ensembles based on research findings"
-    ]
-    
-    for i, step in enumerate(next_steps, 1):
-        st.markdown(f"{i}. {step}")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
-# Export and utility functions
-def export_enhanced_results(results: Dict, filename: str = "enhanced_sota_results.json"):
-    """Export enhanced results with research metadata"""
-    enhanced_results = {
-        'results': results,
-        'metadata': {
-            'system': 'Enhanced SOTA Speech & Text Analytics',
-            'version': '2024-2025 Research Integration',
-            'features': config.FEATURE_COUNT,
-            'research_papers': [
-                'Vision Transformer SER (2024)',
-                'Graph-based SER (2024)', 
-                'Transformer Attention (2024-2025)'
-            ],
-            'your_achievement': '82.4% accuracy',
-            'target_accuracy': '85-90%',
-            'timestamp': datetime.now().isoformat()
-        }
-    }
+# Main Application
+def main():
+    # Enhanced Header
+    st.markdown("""
+    <div class="main-header">
+        <h1>🎯 SOTA Speech & Text Analytics Platform (2024-2025)</h1>
+        <p><strong>Enhanced with Latest Research + Real Model Integration (82.4% Accuracy)</strong></p>
+        <p><em>280 Enhanced Features | Vision Transformer | Graph Networks | Real Model Loading</em></p>
+        <p><strong>Research Integration: 98% ViT Accuracy + 18% Graph Improvement + Transformer Attention</strong></p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    return json.dumps(enhanced_results, indent=2, default=str)
+    # Enhanced System Status
+    display_enhanced_system_status()
+    
+    # Sidebar Navigation
+    setup_enhanced_sidebar()
+    
+    # Main Content Router
+    nav_selection = st.session_state.get('nav_selection', '🏠 Dashboard')
+    
+    if nav_selection == '🏠 Dashboard':
+        show_enhanced_dashboard()
+    elif nav_selection == '🎤 Audio Analysis':
+        show_enhanced_audio_analysis()
+    elif nav_selection == '📝 Text Analytics':
+        show_enhanced_text_analytics()
+    elif nav_selection == '📊 Model Performance':
+        show_enhanced_model_performance()
+    elif nav_selection == '🔬 Research Integration':
+        show_research_integration()
 
-# Complete training script integration
-def complete_training_script_integration():
-    """Complete training script with all enhancements"""
-    st.markdown("### 💾 Complete Training Script Integration")
-    
-    training_code = '''
-# Add this to your training script for complete integration
-
-# 1. SAVE YOUR MODELS FOR STREAMLIT
-def save_enhanced_models_for_streamlit(cv_results, scaler, feature_selector, label_encoder, save_path="./models/"):
-    """Save your enhanced models for real Streamlit predictions"""
-    import os
-    import joblib
-    
-    os.makedirs(save_path, exist_ok=True)
-    
-    # Save enhanced models with proper naming
-    for model_name, results in cv_results.items():
-        if 'model' in results:
-            model = results['model']
-            clean_name = model_name.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('-', '_')
-            filename = f"{clean_name}_model.pkl"
-            
-            joblib.dump(model, os.path.join(save_path, filename))
-            accuracy = results.get('test_accuracy', 0)
-            print(f"✅ Saved {model_name} (Accuracy: {accuracy:.1%})")
-    
-    # Save preprocessing components
-    joblib.dump(scaler, os.path.join(save_path, 'scaler.pkl'))
-    joblib.dump(feature_selector, os.path.join(save_path, 'feature_selector.pkl'))
-    joblib.dump(label_encoder, os.path.join(save_path, 'label_encoder.pkl'))
-    
-    print(f"🎯 All models saved to {save_path}")
-    print("📱 Your Streamlit app will now use REAL predictions!")
-
-# 2. ENHANCED FEATURE EXTRACTION
-def extract_enhanced_280_features(audio_file_path):
-    """Extract 280 enhanced features for training"""
-    extractor = EnhancedSOTAFeatureExtractor()
-    return extractor.extract_enhanced_sota_features(audio_file_path)
-
-# 3. ENHANCED TRAINING PIPELINE
-def train_enhanced_sota_models(X, y):
-    """Train enhanced models with research improvements"""
-    
-    # Use 280 enhanced features
-    print(f"Training with {X.shape[1]} enhanced features")
-    
-    # Enhanced preprocessing
-    scaler = RobustScaler()
-    feature_selector = SelectKBest(score_func=f_classif, k=min(250, X.shape[1]))
-    label_encoder = LabelEncoder()
-    
-    # Enhanced models with research parameters
-    enhanced_models = {
-        'Enhanced XGBoost (Research)': xgb.XGBClassifier(
-            n_estimators=800,  # Increased for 280 features
-            max_depth=15,      # Deeper for complex features
-            learning_rate=0.015,
-            subsample=0.8,
-            colsample_bytree=0.7,
-            reg_alpha=0.15,
-            reg_lambda=0.15,
-            random_state=42
-        ),
-        'Enhanced LightGBM (Research)': lgb.LGBMClassifier(
-            n_estimators=800,
-            max_depth=15,
-            learning_rate=0.015,
-            subsample=0.8,
-            colsample_bytree=0.7,
-            reg_alpha=0.15,
-            reg_lambda=0.15,
-            random_state=42
-        )
-    }
-    
-    # Train and evaluate
-    cv_results = {}
-    for name, model in enhanced_models.items():
-        # Cross-validation
-        cv_scores = cross_val_score(model, X, y, cv=5, scoring='f1_macro')
-        
-        # Train final model
-        model.fit(X, y)
-        
-        cv_results[name] = {
-            'model': model,
-            'cv_f1_mean': cv_scores.mean(),
-            'cv_f1_std': cv_scores.std(),
-            'test_accuracy': cv_scores.mean()  # Approximation
-        }
-        
-        print(f"✅ {name}: {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
-    
-    # Save for Streamlit
-    save_enhanced_models_for_streamlit(cv_results, scaler, feature_selector, label_encoder)
-    
-    return cv_results
-
-# 4. COMPLETE WORKFLOW
-if __name__ == "__main__":
-    # Your existing data preparation code here
-    # ...
-    
-    # Extract enhanced features for all audio files
-    enhanced_features = []
-    for audio_file in audio_files:
-        features = extract_enhanced_280_features(audio_file)
-        enhanced_features.append(list(features.values()))
-    
-    X_enhanced = np.array(enhanced_features)
-    
-    # Train enhanced models
-    enhanced_results = train_enhanced_sota_models(X_enhanced, y)
-    
-    print("🎯 Enhanced training complete!")
-    print("📱 Run your Streamlit app to use real 85%+ accuracy predictions!")
-'''
-    
-    st.code(training_code, language='python')
-
-# Main execution
+# Run the application
 if __name__ == "__main__":
     main()
 
-# Additional utility functions for the complete system
-def display_system_info():
-    """Display complete system information"""
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📋 System Information")
-    st.sidebar.markdown(f"**Enhanced Features**: {config.FEATURE_COUNT}")
-    st.sidebar.markdown(f"**Your Achievement**: 82.4% accuracy")
-    st.sidebar.markdown(f"**Research Target**: 85-90% accuracy")
-    st.sidebar.markdown(f"**Model Status**: {'Real' if st.session_state.classifier.using_actual_models else 'Research'}")
-    
-    # Research integration status
-    research_status = {
-        'Vision Transformer': ADVANCED_MODELS_AVAILABLE and CV2_AVAILABLE,
-        'Graph Networks': True,
-        'Transformer Attention': True,
-        'Speaker Motif': True,
-        'Statistical Graphs': True
-    }
-    
-    st.sidebar.markdown("**Research Integration:**")
-    for feature, status in research_status.items():
-        icon = "✅" if status else "❌"
-        st.sidebar.markdown(f"{icon} {feature}")
-
-def create_enhanced_config():
-    """Create enhanced configuration for production use"""
-    return {
-        'feature_count': config.FEATURE_COUNT,
-        'model_performance': config.MODEL_PERFORMANCE,
-        'research_papers': [
-            {
-                'title': 'Vision Transformer SER',
-                'year': 2024,
-                'accuracy': '98% on TESS',
-                'implementation': 'Enhanced ViT features'
-            },
-            {
-                'title': 'Graph-based SER',
-                'year': 2024,
-                'improvement': '+18% UAR',
-                'implementation': 'Statistical + structural graphs'
-            }
-        ],
-        'enhancement_summary': {
-            'original_features': 214,
-            'enhanced_features': config.FEATURE_COUNT,
-            'research_integrations': 4,
-            'expected_improvement': '3-8% accuracy'
-        }
-    }
-
-# Integration instructions
+# Integration instructions at the bottom
 st.markdown("""
 ---
 ## 🚀 Complete Integration Instructions
 
-### 1. **Replace Your Current Code**
-Replace your existing Streamlit app with this complete enhanced version.
-
-### 2. **Save Your Trained Models**
-Add the training script integration to save your 82.4% accuracy models:
-```python
-save_enhanced_models_for_streamlit(cv_results, scaler, feature_selector, label_encoder)
+### 1. **Save This Complete Application**
+Save this code as `sota_analytics_app.py` and run with:
+```bash
+streamlit run sota_analytics_app.py
 ```
 
-### 3. **Train Enhanced Models**
-Use the 280 enhanced features to train new models targeting 85-90% accuracy.
+### 2. **Install Required Dependencies**
+```bash
+pip install streamlit pandas numpy plotly librosa soundfile opencv-python
+pip install xgboost lightgbm timm nltk textblob
+pip install networkx scikit-learn scipy torch joblib
+```
 
-### 4. **Real Predictions**
-Your app will automatically use real models when available, or research-based predictions as fallback.
+### 3. **Save Your Trained Models**
+Add this to your training script to save your 82.4% accuracy models:
+```python
+import joblib
+import os
 
-### 5. **Research Validation**
-All enhancements are based on validated 2024-2025 research papers achieving 85-98% accuracy.
+# After training your models
+save_path = "./models/"
+os.makedirs(save_path, exist_ok=True)
+
+# Save your trained models (replace with your actual model objects)
+joblib.dump(your_xgboost_model, os.path.join(save_path, 'sota_xgboost_2024_model.pkl'))
+joblib.dump(your_scaler, os.path.join(save_path, 'scaler.pkl'))
+joblib.dump(your_feature_selector, os.path.join(save_path, 'feature_selector.pkl'))
+joblib.dump(your_label_encoder, os.path.join(save_path, 'label_encoder.pkl'))
+```
+
+### 4. **Real vs Research-Based Predictions**
+- **With saved models**: App uses your actual 82.4% accuracy models
+- **Without models**: App uses research-based prediction algorithms
+
+### 5. **Enhanced Features**
+The app extracts 280 enhanced features:
+- **Original**: Your 214 SOTA features
+- **Enhanced ViT**: +16 features (2024 research)
+- **Statistical Graphs**: +15 features (2024 paper)
+- **Transformer Attention**: +20 features (2024-2025)
+- **Speaker Motif**: +15 features (research)
 
 ---
-**Result**: Production-ready system with real 82.4% accuracy models + research enhancements targeting 85-90% accuracy!
+**Result**: Complete production-ready system with real model integration and research enhancements targeting 85-90% accuracy!
 """)
-
-# Complete system is now ready for production use
