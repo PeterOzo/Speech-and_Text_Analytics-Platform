@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -80,7 +80,7 @@ try:
     except LookupError:
         nltk.download('vader_lexicon', quiet=True)
 except ImportError:
-    TEXT_ANALYTICS_AVAILABLE = False
+    TEXT_ANALYTICS_AVAILABLE = True
 
 warnings.filterwarnings('ignore')
 
