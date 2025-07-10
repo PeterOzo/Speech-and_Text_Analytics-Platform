@@ -34,8 +34,11 @@ typing-extensions>=4.5.0
 opencv-python-headless>=4.8.0
 
 # Fix 2: Text Analytics (NLP) - Multiple approaches
+
 nltk>=3.8
 textblob>=0.17.0
+vaderSentiment>=3.3.2
+python-dateutil>=2.8.0
 
 # Alternative NLP option (if above fails)
 # vaderSentiment>=3.3.2
