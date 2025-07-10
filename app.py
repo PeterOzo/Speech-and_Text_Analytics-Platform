@@ -604,7 +604,8 @@ class TextAnalyticsEngine:
     
     def __init__(self):
         self.text_analytics_available = TEXT_ANALYTICS_AVAILABLE
-        self.emotion_lexicon = self._build_emotion_lexicon() self.simple_analytics = SimpleTextAnalytics()
+        self.emotion_lexicon = self._build_emotion_lexicon() 
+        self.simple_analytics = SimpleTextAnalytics()
         
     def analyze_text_comprehensive(self, text: str) -> Dict[str, Any]:
         """Comprehensive text analysis"""
