@@ -1078,7 +1078,7 @@ def main():
         <h1>🎯 Advanced Speech & Text Analytics Platform</h1>
         <p><strong>Professional Multi-Modal Emotion Analysis System</strong></p>
         <p><em>Comprehensive Feature Extraction | Advanced Machine Learning | Professional Insights</em></p>
-        <p><strong>Developed by Peter Chika Ozo-ogueji</strong> | <em>Completed Today</em></p>
+        <p><strong>Developed by Peter Chika Ozo-ogueji</strong> | <em>Data Scientist</em></p>
     </div>
     """, unsafe_allow_html=True)
     
