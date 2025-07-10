@@ -1,4 +1,4 @@
-# Current Working Dependencies (Keep These)
+# Core dependencies
 streamlit>=1.28.0
 pandas>=1.5.0
 numpy>=1.24.0
@@ -6,46 +6,32 @@ plotly>=5.15.0
 seaborn>=0.12.0
 matplotlib>=3.6.0
 
-# Deep Learning (Working)
+# Machine Learning
 torch>=2.0.0
-torchaudio>=2.0.0
-
-# Audio Processing (Working)
-librosa>=0.10.0
-soundfile>=0.12.0
-
-# Machine Learning (Working)
 scikit-learn>=1.3.0
 xgboost>=1.7.0
 lightgbm>=3.3.0
 
-# Advanced Models (Working)
+# Computer Vision and Advanced Models
 timm>=0.9.0
+opencv-python-headless>=4.8.0
 
-# Core Processing
+# Network Analysis
 networkx>=3.0
 scipy>=1.10.0
 joblib>=1.3.0
 typing-extensions>=4.5.0
 
-# FIXES FOR MISSING DEPENDENCIES:
+# Audio Processing (Python 3.13 compatible versions)
+librosa>=0.10.0
+soundfile>=0.12.0
+audioread>=3.0.0
 
-# Fix 1: Computer Vision (OpenCV)
-opencv-python-headless>=4.8.0
-
-# Fix 2: Text Analytics (NLP) - Multiple approaches
-
+# Text Analytics
 nltk>=3.8
 textblob>=0.17.0
 vaderSentiment>=3.3.2
 python-dateutil>=2.8.0
 
-# Alternative NLP option (if above fails)
-# vaderSentiment>=3.3.2
-
-# Image Processing Support
+# Utilities
 Pillow>=9.5.0
-
-# Additional Text Processing Support
-# python-dateutil>=2.8.0
-# six>=1.16.0
