@@ -1,37 +1,84 @@
-# Core dependencies
-streamlit>=1.28.0
-pandas>=1.5.0
-numpy>=1.24.0
-plotly>=5.15.0
-seaborn>=0.12.0
-matplotlib>=3.6.0
+# SOTA Speech & Text Analytics Platform Requirements
+# Compatible versions tested for production deployment
 
-# Machine Learning
-torch>=2.0.0
-scikit-learn>=1.3.0
-xgboost>=1.7.0
-lightgbm>=3.3.0
+# Core Streamlit and Web Framework
+streamlit>=1.28.0,<2.0.0
+streamlit-option-menu>=0.3.6
 
-# Computer Vision and Advanced Models
-timm>=0.9.0
-opencv-python-headless>=4.8.0
+# Data Processing and Analysis
+pandas>=1.5.0,<3.0.0
+numpy>=1.21.0,<2.0.0
 
-# Network Analysis
-networkx>=3.0
-scipy>=1.10.0
-joblib>=1.3.0
-typing-extensions>=4.5.0
+# Visualization
+plotly>=5.15.0,<6.0.0
 
-# Audio Processing (Python 3.13 compatible versions)
-librosa>=0.10.0
-soundfile>=0.12.0
-audioread>=3.0.0
+# Audio Processing (Core Requirements)
+librosa>=0.10.0,<1.0.0
+soundfile>=0.12.1,<1.0.0
+resampy>=0.4.0  # Required by librosa
 
-# Text Analytics
-nltk>=3.8
-textblob>=0.17.0
-vaderSentiment>=3.3.2
-python-dateutil>=2.8.0
+# Computer Vision
+opencv-python>=4.8.0,<5.0.0
 
-# Utilities
-Pillow>=9.5.0
+# Machine Learning Core
+scikit-learn>=1.3.0,<2.0.0
+scipy>=1.10.0,<2.0.0
+joblib>=1.3.0,<2.0.0
+
+# Advanced ML Models
+xgboost>=1.7.0,<3.0.0
+lightgbm>=4.0.0,<5.0.0
+
+# Deep Learning and Vision Transformers
+torch>=2.0.0,<3.0.0
+torchvision>=0.15.0,<1.0.0
+timm>=0.9.0,<1.0.0
+
+# Natural Language Processing
+nltk>=3.8.0,<4.0.0
+textblob>=0.17.1,<1.0.0
+
+# Graph Processing
+networkx>=2.8.0,<4.0.0
+
+# Audio Format Support
+pydub>=0.25.1  # Additional audio format support
+ffmpeg-python>=0.2.0  # Audio format conversion
+
+# Scientific Computing
+numba>=0.57.0  # Performance optimization for librosa
+llvmlite>=0.40.0  # Required by numba
+
+# Utilities and Performance
+tqdm>=4.65.0  # Progress bars
+psutil>=5.9.0  # System monitoring
+memory-profiler>=0.61.0  # Memory usage tracking
+
+# Optional: Enhanced Audio Processing
+praat-parselmouth>=0.4.3  # Advanced prosodic analysis (optional)
+webrtcvad>=2.0.10  # Voice activity detection (optional)
+
+# Optional: Enhanced Text Processing
+spacy>=3.6.0  # Advanced NLP (optional)
+transformers>=4.30.0  # Transformer models (optional)
+
+# Development and Testing (uncomment for development)
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+# black>=23.0.0
+# flake8>=6.0.0
+# mypy>=1.5.0
+
+# Platform-specific requirements
+# For Apple Silicon Macs, you might need:
+# tensorflow-macos>=2.13.0  # If using TensorFlow
+# tensorflow-metal>=1.0.0   # GPU acceleration on Apple Silicon
+
+# For CUDA support (uncomment if using NVIDIA GPUs):
+# torch>=2.0.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+# torchvision>=0.15.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+
+# Note: Install with specific PyTorch version for your system:
+# For CPU-only: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# For CUDA 11.8: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+# For CUDA 12.1: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
