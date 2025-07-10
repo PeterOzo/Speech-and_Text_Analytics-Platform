@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-COMPLETE SOTA SPEECH & TEXT ANALYTICS SYSTEM (2024-2025)
-Based on Latest Research + Your 82.4% Accuracy Results
+COMPLETE SOTA SPEECH & TEXT ANALYTICS SYSTEM (2025)
+Based on Latest Research + My Model's 82.4% Accuracy Results
 Enhanced with Vision Transformer, Graph Networks, and Real Model Loading
 
-Author: Enhanced based on Peter Chika Ozo-ogueji's research
+Author: Peter Chika Ozo-ogueji
 Research Papers Integrated:
 - "An enhanced speech emotion recognition using vision transformer" (2024) - 98% accuracy
 - "Speech emotion recognition via graph-based representations" (2024) - 18% improvement
