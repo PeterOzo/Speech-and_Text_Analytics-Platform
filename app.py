@@ -64,7 +64,6 @@ except ImportError:
 try:
     import nltk
     from textblob import TextBlob
-    import spacy
     TEXT_ANALYTICS_AVAILABLE = True
     # Download required NLTK data
     try:
@@ -80,7 +79,7 @@ try:
     except LookupError:
         nltk.download('vader_lexicon', quiet=True)
 except ImportError:
-    TEXT_ANALYTICS_AVAILABLE = True
+    TEXT_ANALYTICS_AVAILABLE = False
 
 warnings.filterwarnings('ignore')
 
@@ -604,8 +603,7 @@ class TextAnalyticsEngine:
     
     def __init__(self):
         self.text_analytics_available = TEXT_ANALYTICS_AVAILABLE
-        self.emotion_lexicon = self._build_emotion_lexicon() 
-        self.simple_analytics = SimpleTextAnalytics()
+        self.emotion_lexicon = self._build_emotion_lexicon()
         
     def analyze_text_comprehensive(self, text: str) -> Dict[str, Any]:
         """Comprehensive text analysis"""
