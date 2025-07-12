@@ -1,23 +1,8 @@
-# Core required dependencies for deployment
 streamlit>=1.28.0
-pandas>=1.5.0
-numpy>=1.21.0
-plotly>=5.0.0
-scikit-learn>=1.1.0
-scipy>=1.9.0
-networkx>=2.8.0
-joblib>=1.2.0
-
-# Optional audio processing (commented out for deployment)
-# librosa>=0.9.0
-# soundfile>=0.10.0
-
-# Optional computer vision (commented out for deployment) 
-# opencv-python>=4.5.0
-
-# Optional enhanced ML models (commented out for deployment)
-# xgboost>=1.6.0
-# lightgbm>=3.3.0
-
-# Note: Uncomment audio/ML dependencies above for full functionality
-# For deployment demo, the app will use fallback implementations
+numpy>=1.24.0
+pandas>=2.0.0
+librosa>=0.10.0
+scikit-learn>=1.3.0
+requests>=2.28.0
+plotly>=5.15.0
+soundfile>=0.12.0
