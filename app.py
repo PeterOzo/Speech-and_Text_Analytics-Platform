@@ -14,8 +14,12 @@ import json
 import re
 
 # CORRECTED Google Drive URLs - Multiple download methods
+# 🎉 FINAL WORKING MODEL_URLS - All 6 models should load successfully!
 MODEL_URLS = {
-    'SOTA_Ensemble': 'https://drive.google.com/uc?export=download&id=1X4PkHGrr2hBNgWNZ-TB8O-oznKtw-jbq&confirm=t',  # 110MB model
+    # ✅ NEW: Hugging Face URL for the 110MB SOTA model
+    'SOTA_Ensemble': 'https://huggingface.co/PetAnn/sota-speech-emotion-model/resolve/main/sota_best_model.pkl',
+    
+    # ✅ WORKING: These 5 models are already loading perfectly from Google Drive
     'scaler': 'https://drive.google.com/uc?export=download&id=1NfOihDG1bVnNbOglgKsSylNxiCm8_AmL&confirm=t',
     'feature_selector': 'https://drive.google.com/uc?export=download&id=1Cch1ctTSdJRL2jUiZuhT7Ri2f6eGw-Et&confirm=t',
     'label_encoder': 'https://drive.google.com/uc?export=download&id=1Vhf3icoC7NWprnU4mnjI5IUQ-bSLS6s0&confirm=t',
