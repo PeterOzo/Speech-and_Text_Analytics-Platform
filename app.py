@@ -496,6 +496,153 @@ def debug_model_contents(models):
                 elif hasattr(model, 'estimators_'):
                     st.write(f"**Estimators:** {len(model.estimators_)} models in ensemble")
 
+def predict_emotion_corrected(features, models):
+    """Corrected SOTA prediction with proper model mapping"""
+    try:
+        if not features:
+            st.error("No features extracted")
+            return None, None, None
+            
+        # Get feature names in the correct order
+        feature_names = models.get('feature_names')
+        if not feature_names:
+            st.error("Feature names not available")
+            return None, None, None
+        
+        st.info(f"🔬 Using {len(feature_names)} SOTA features for prediction...")
+        
+        # Create feature array in correct order
+        feature_array = []
+        missing_features = []
+        
+        for name in feature_names:
+            if name in features:
+                feature_array.append(features[name])
+            else:
+                feature_array.append(0.0)  # Default for missing features
+                missing_features.append(name)
+        
+        if missing_features and len(missing_features) < 50:
+            st.info(f"Using defaults for {len(missing_features)} missing features")
+        
+        # Convert to numpy array
+        X = np.array(feature_array).reshape(1, -1)
+        st.info(f"📊 Feature vector shape: {X.shape}")
+        
+        # CORRECTED MODEL MAPPING based on debug output:
+        # The files are mixed up, so let's use them correctly:
+        
+        # The "label_encoder" file actually contains SelectKBest!
+        feature_selector = models.get('label_encoder')  # This is actually SelectKBest
+        
+        # The "feature_selector" file actually contains LabelEncoder!
+        label_encoder = models.get('feature_selector')  # This is actually LabelEncoder
+        
+        # Try to find a proper scaler (might be in metadata or missing)
+        scaler = None
+        if isinstance(models.get('scaler'), dict):
+            st.info("🔍 Scaler appears to be metadata, checking for scaler in other files...")
+            # Check if any other model could be a scaler
+            for name, model in models.items():
+                if hasattr(model, 'scale_') or hasattr(model, 'mean_') or 'Scaler' in str(type(model)):
+                    scaler = model
+                    st.info(f"📊 Found scaler in {name}: {type(model).__name__}")
+                    break
+        
+        sota_model = models.get('SOTA_Ensemble')  # This is correct
+        
+        st.info(f"🔧 CORRECTED model mapping:")
+        st.info(f"  - SelectKBest (from 'label_encoder'): {type(feature_selector).__name__}")
+        st.info(f"  - LabelEncoder (from 'feature_selector'): {type(label_encoder).__name__}")
+        st.info(f"  - Scaler: {type(scaler).__name__ if scaler else 'None'}")
+        st.info(f"  - SOTA model: {type(sota_model).__name__}")
+        
+        # Step 1: Apply SelectKBest feature selection (214 → 200 features)
+        X_processed = X
+        if feature_selector and hasattr(feature_selector, 'transform'):
+            try:
+                if hasattr(feature_selector, 'scores_') or 'SelectKBest' in str(type(feature_selector)):
+                    X_processed = feature_selector.transform(X)
+                    st.success(f"✅ Applied SelectKBest: {X_processed.shape[1]} features selected")
+                else:
+                    st.warning(f"⚠️ Feature selector not SelectKBest: {type(feature_selector).__name__}")
+            except Exception as e:
+                st.error(f"❌ Feature selection failed: {e}")
+                return None, None, None
+        else:
+            st.error("❌ No valid SelectKBest found")
+            return None, None, None
+        
+        # Step 2: Apply scaling (if available)
+        if scaler and hasattr(scaler, 'transform'):
+            try:
+                X_processed = scaler.transform(X_processed)
+                st.success(f"✅ Applied scaling")
+            except Exception as e:
+                st.warning(f"⚠️ Scaling failed: {e}, using unscaled features")
+        else:
+            st.info("ℹ️ No scaler available, using unscaled features")
+        
+        # Step 3: Make prediction with SOTA ensemble
+        if not sota_model or not hasattr(sota_model, 'predict'):
+            st.error("❌ SOTA ensemble model not available")
+            return None, None, None
+        
+        try:
+            prediction = sota_model.predict(X_processed)[0]
+            probabilities = sota_model.predict_proba(X_processed)[0]
+            st.success(f"✅ SOTA model prediction successful!")
+        except Exception as e:
+            st.error(f"❌ SOTA model prediction failed: {e}")
+            return None, None, None
+        
+        # Step 4: Decode prediction using LabelEncoder
+        if label_encoder and hasattr(label_encoder, 'inverse_transform'):
+            try:
+                emotion = label_encoder.inverse_transform([prediction])[0]
+                confidence = probabilities[prediction]
+                
+                st.success(f"🎯 SOTA model prediction: {emotion} ({confidence:.1%} confidence)")
+                
+                # Get all emotion probabilities
+                emotion_probs = {}
+                for i, prob in enumerate(probabilities):
+                    try:
+                        emo = label_encoder.inverse_transform([i])[0]
+                        emotion_probs[emo] = prob
+                    except:
+                        emotion_probs[f'emotion_{i}'] = prob
+                
+                return emotion, confidence, emotion_probs
+                
+            except Exception as e:
+                st.error(f"❌ Label decoding failed: {e}")
+                # Fallback emotion mapping
+                emotion_map = {0: 'angry', 1: 'calm', 2: 'disgust', 3: 'fearful', 
+                              4: 'happy', 5: 'neutral', 6: 'sad', 7: 'surprised'}
+                emotion = emotion_map.get(prediction, f'emotion_{prediction}')
+                confidence = probabilities[prediction]
+                emotion_probs = {emotion_map.get(i, f'emotion_{i}'): prob 
+                                for i, prob in enumerate(probabilities)}
+                return emotion, confidence, emotion_probs
+        else:
+            st.warning("⚠️ Using fallback emotion mapping")
+            # Fallback emotion mapping
+            emotion_map = {0: 'angry', 1: 'calm', 2: 'disgust', 3: 'fearful', 
+                          4: 'happy', 5: 'neutral', 6: 'sad', 7: 'surprised'}
+            emotion = emotion_map.get(prediction, f'emotion_{prediction}')
+            confidence = probabilities[prediction]
+            emotion_probs = {emotion_map.get(i, f'emotion_{i}'): prob 
+                            for i, prob in enumerate(probabilities)}
+            return emotion, confidence, emotion_probs
+        
+    except Exception as e:
+        st.error(f"❌ Prediction error: {str(e)}")
+        st.error(f"Error details: {type(e).__name__}")
+        import traceback
+        st.error(f"Traceback: {traceback.format_exc()}")
+        return None, None, None
+
 def predict_emotion_direct(features, models):
     """Direct prediction using just the ensemble model"""
     try:
@@ -678,7 +825,11 @@ def main():
             st.warning(f"⚠️ Still loading: {', '.join(missing_required)}")
             st.info("⏳ Please wait for all models to load...")
         else:
-            st.success("✅ ALL MODELS LOADED! Ready for REAL SOTA predictions! 🎉")
+            st.success("✅ ALL MODELS LOADED! Ready for CORRECTED SOTA predictions! 🎉")
+            
+            # Optional debug information
+            if st.checkbox("🔍 Show model debug information (optional)"):
+                debug_model_contents(models)
             
             # File uploader
             uploaded_file = st.file_uploader(
@@ -690,22 +841,23 @@ def main():
             if uploaded_file is not None:
                 st.audio(uploaded_file, format='audio/wav')
                 
-                # Debug models first
-                if st.checkbox("🔍 Show model debug information"):
-                    debug_model_contents(models)
-                
-                # Extract features and predict using ROBUST SOTA pipeline
-                with st.spinner('🔬 Analyzing audio with ROBUST SOTA techniques...'):
+                # Extract features and predict using CORRECTED SOTA pipeline
+                with st.spinner('🔬 Analyzing audio with CORRECTED SOTA pipeline...'):
                     features = extract_full_sota_features(uploaded_file)
                     
                     if features:
-                        # Try robust prediction first
-                        emotion, confidence, emotion_probs = predict_emotion_robust(features, models)
+                        # Use corrected prediction with proper model mapping
+                        emotion, confidence, emotion_probs = predict_emotion_corrected(features, models)
                         
-                        # If robust prediction fails, try direct prediction
+                        # If corrected prediction fails, try robust prediction
                         if emotion is None:
-                            st.warning("⚠️ Trying direct prediction method...")
-                            emotion, confidence, emotion_probs = predict_emotion_direct(features, models)
+                            st.warning("⚠️ Trying robust prediction method...")
+                            emotion, confidence, emotion_probs = predict_emotion_robust(features, models)
+                            
+                            # If robust prediction fails, try direct prediction
+                            if emotion is None:
+                                st.warning("⚠️ Trying direct prediction method...")
+                                emotion, confidence, emotion_probs = predict_emotion_direct(features, models)
                         
                         if emotion:
                             # Display results
