@@ -1,38 +1,410 @@
-# Core web framework
-streamlit>=1.28.0
+import streamlit as st
+import numpy as np
+import pandas as pd
+import librosa
+import pickle
+import requests
+import io
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime
+import time
+import joblib
+import json
+import re
+from scipy import stats
 
-# Data manipulation and numerical computing
-numpy>=1.24.0
-pandas>=2.0.0
+# Model URLs
+MODEL_URLS = {
+    'model': 'https://drive.google.com/uc?export=download&id=1kVZ6qg0a_8DNu1yn_hGYlc7mTQokk1CS&confirm=t',
+    'scaler': 'https://drive.google.com/uc?export=download&id=1kjrAEPwVLbKyztSYxGmapysi1_prkJEK&confirm=t',
+    'metadata': 'https://drive.google.com/uc?export=download&id=1TLlvM3SSIrUnz-0isLQGh5fUtV-4CzPu&confirm=t',
+    'label_encoder': 'https://drive.google.com/uc?export=download&id=1o-PX_oquJCmzyrsgq1Oh1Hvv4uUfRZ5n&confirm=t',
+    'feature_selector': 'https://drive.google.com/uc?export=download&id=1u4tX6Xzd9LOJ12PkYKYT3rWnHzncOngi&confirm=t',
+    'feature_names': 'https://drive.google.com/uc?export=download&id=1lwFLlbCrFPLvfiPvxkFNTWyw91djgzyK&confirm=t'
+}
 
-# Audio processing
-librosa>=0.10.0
-soundfile>=0.12.0
-audioread>=3.0.0
+st.set_page_config(
+    page_title="🔍 Missing Feature Diagnostic Tool",
+    page_icon="🔍",
+    layout="wide"
+)
 
-# Machine learning
-scikit-learn>=1.3.0
-lightgbm>=3.3.0
-joblib>=1.3.0
+@st.cache_data
+def load_models_quick():
+    """Quick model loading"""
+    models = {}
+    for key, url in MODEL_URLS.items():
+        try:
+            response = requests.get(url, timeout=300)
+            content = response.content
+            if key == 'metadata':
+                models[key] = json.loads(content.decode('utf-8'))
+            else:
+                models[key] = joblib.load(io.BytesIO(content))
+        except:
+            models[key] = None
+    return models
 
-# Scientific computing
-scipy>=1.11.0
+def analyze_missing_features():
+    """Analyze which features are missing and why"""
+    
+    st.header("🔍 Missing Feature Analysis")
+    
+    models = load_models_quick()
+    feature_names = models.get('feature_names')
+    
+    if not feature_names:
+        st.error("Could not load feature names")
+        return
+    
+    st.success(f"✅ Loaded {len(feature_names)} expected feature names")
+    
+    # Categorize features
+    feature_categories = {
+        'mfcc': [],
+        'spectral': [],
+        'chroma': [],
+        'f0': [],
+        'energy': [],
+        'spectral_contrast': [],
+        'spectral_flatness': [],
+        'tonnetz': [],
+        'vit_feature': [],
+        'graph': [],
+        'quantum': [],
+        'unknown': []
+    }
+    
+    for name in feature_names:
+        categorized = False
+        for category in feature_categories.keys():
+            if category in name.lower():
+                feature_categories[category].append(name)
+                categorized = True
+                break
+        if not categorized:
+            feature_categories['unknown'].append(name)
+    
+    # Display categorization
+    st.subheader("📊 Feature Categories")
+    for category, features in feature_categories.items():
+        if features:
+            st.write(f"**{category.upper()}** ({len(features)} features):")
+            if len(features) <= 10:
+                for feat in features:
+                    st.write(f"  • {feat}")
+            else:
+                st.write(f"  • {features[0]} ... {features[-1]} (and {len(features)-2} others)")
+    
+    # Show suspicious features
+    st.subheader("🚨 Suspicious Features")
+    suspicious = feature_categories['vit_feature'] + feature_categories['graph'] + feature_categories['quantum']
+    
+    if suspicious:
+        st.error(f"Found {len(suspicious)} suspicious features that seem like placeholders:")
+        for feat in suspicious[:10]:  # Show first 10
+            st.write(f"  • {feat}")
+        if len(suspicious) > 10:
+            st.write(f"  • ... and {len(suspicious)-10} more")
+        
+        st.warning("💡 **These features are likely causing the 'disgust' bias!**")
+        st.info("They appear to be synthetic/placeholder features added during training.")
+    
+    return feature_names, feature_categories
 
-# Visualization
-plotly>=5.15.0
+def extract_and_test_features(audio_file, feature_names, strategy="smart_defaults"):
+    """Extract features and test different strategies for missing ones"""
+    
+    try:
+        # Load audio
+        audio, sr = librosa.load(audio_file, sr=22050, duration=3.0)
+        
+        if audio is None or len(audio) == 0:
+            return None
+        
+        # Normalize
+        if not np.isfinite(audio).all():
+            audio = np.nan_to_num(audio, nan=0.0, posinf=0.0, neginf=0.0)
+        if np.max(np.abs(audio)) > 0:
+            audio = librosa.util.normalize(audio)
+        
+        features = {}
+        
+        # 1. Standard MFCC features
+        try:
+            mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
+            mfcc_delta = librosa.feature.delta(mfccs)
+            mfcc_delta2 = librosa.feature.delta(mfccs, order=2)
+            
+            for i in range(13):
+                features[f'mfcc_{i}_mean'] = float(np.mean(mfccs[i]))
+                features[f'mfcc_{i}_std'] = float(np.std(mfccs[i]))
+                features[f'mfcc_{i}_max'] = float(np.max(mfccs[i]))
+                features[f'mfcc_{i}_min'] = float(np.min(mfccs[i]))
+                features[f'mfcc_{i}_skew'] = float(stats.skew(mfccs[i]))
+                features[f'mfcc_{i}_kurtosis'] = float(stats.kurtosis(mfccs[i]))
+                features[f'mfcc_delta_{i}_mean'] = float(np.mean(mfcc_delta[i]))
+                features[f'mfcc_delta2_{i}_mean'] = float(np.mean(mfcc_delta2[i]))
+        except:
+            pass
+        
+        # 2. Spectral features
+        try:
+            spectral_centroids = librosa.feature.spectral_centroid(y=audio, sr=sr)[0]
+            spectral_rolloff = librosa.feature.spectral_rolloff(y=audio, sr=sr)[0]
+            spectral_bandwidth = librosa.feature.spectral_bandwidth(y=audio, sr=sr)[0]
+            zero_crossing_rate = librosa.feature.zero_crossing_rate(audio)[0]
+            
+            for name, feature_array in [
+                ('spectral_centroid', spectral_centroids),
+                ('spectral_rolloff', spectral_rolloff),
+                ('spectral_bandwidth', spectral_bandwidth),
+                ('zero_crossing_rate', zero_crossing_rate)
+            ]:
+                features[f'{name}_mean'] = float(np.mean(feature_array))
+                features[f'{name}_std'] = float(np.std(feature_array))
+                features[f'{name}_max'] = float(np.max(feature_array))
+                features[f'{name}_skew'] = float(stats.skew(feature_array))
+        except:
+            pass
+        
+        # 3. Chroma features
+        try:
+            chroma = librosa.feature.chroma_stft(y=audio, sr=sr)
+            for i in range(12):
+                features[f'chroma_{i}_mean'] = float(np.mean(chroma[i]))
+                features[f'chroma_{i}_std'] = float(np.std(chroma[i]))
+        except:
+            pass
+        
+        # 4. F0 and energy features (fixed)
+        try:
+            f0 = librosa.yin(audio, fmin=50, fmax=400)
+            f0_clean = f0[f0 > 0]
+            
+            if len(f0_clean) > 0:
+                features['f0_mean'] = float(np.mean(f0_clean))
+                features['f0_std'] = float(np.std(f0_clean))
+                features['f0_range'] = float(np.max(f0_clean) - np.min(f0_clean))
+                features['f0_jitter'] = float(np.mean(np.abs(np.diff(f0_clean))) / np.mean(f0_clean)) if len(f0_clean) > 1 else 0.0
+                features['f0_shimmer'] = float(np.std(f0_clean) / np.mean(f0_clean)) if np.mean(f0_clean) > 0 else 0.0
+                features['f0_slope'] = float(np.polyfit(range(len(f0_clean)), f0_clean, 1)[0]) if len(f0_clean) > 1 else 0.0
+                features['f0_curvature'] = float(np.polyfit(range(len(f0_clean)), f0_clean, 2)[0]) if len(f0_clean) > 2 else 0.0
+            
+            # Energy features
+            rms = librosa.feature.rms(y=audio)[0]
+            features['energy_mean'] = float(np.mean(rms))
+            features['energy_std'] = float(np.std(rms))
+            features['energy_skew'] = float(stats.skew(rms))
+            features['energy_kurtosis'] = float(stats.kurtosis(rms))
+        except:
+            pass
+        
+        # 5. Advanced spectral features
+        try:
+            # Spectral contrast
+            spectral_contrast = librosa.feature.spectral_contrast(y=audio, sr=sr)
+            for i in range(min(7, spectral_contrast.shape[0])):
+                features[f'spectral_contrast_{i}_mean'] = float(np.mean(spectral_contrast[i]))
+                features[f'spectral_contrast_{i}_std'] = float(np.std(spectral_contrast[i]))
+            
+            # Spectral flatness
+            spectral_flatness = librosa.feature.spectral_flatness(y=audio)[0]
+            features['spectral_flatness_mean'] = float(np.mean(spectral_flatness))
+            features['spectral_flatness_std'] = float(np.std(spectral_flatness))
+            
+            # Tonnetz
+            tonnetz = librosa.feature.tonnetz(y=audio, sr=sr)
+            for i in range(min(6, tonnetz.shape[0])):
+                features[f'tonnetz_{i}_mean'] = float(np.mean(tonnetz[i]))
+                features[f'tonnetz_{i}_std'] = float(np.std(tonnetz[i]))
+        except:
+            pass
+        
+        # 6. Handle missing features with different strategies
+        feature_array = []
+        missing_features = []
+        
+        for name in feature_names:
+            if name in features:
+                value = features[name]
+                if np.isnan(value) or np.isinf(value):
+                    value = 0.0
+                feature_array.append(float(value))
+            else:
+                missing_features.append(name)
+                
+                # Different strategies for missing features
+                if strategy == "zeros":
+                    default_value = 0.0
+                elif strategy == "small_random":
+                    default_value = np.random.normal(0, 0.01)
+                elif strategy == "smart_defaults":
+                    # Use feature-specific intelligent defaults
+                    if 'vit_feature' in name:
+                        # Vision Transformer features - small values
+                        default_value = np.random.normal(0, 0.001)
+                    elif 'graph' in name:
+                        # Graph features - typically small positive
+                        if 'density' in name or 'clustering' in name:
+                            default_value = np.random.uniform(0, 0.1)
+                        elif 'nodes' in name or 'edges' in name:
+                            default_value = np.random.uniform(1, 10)
+                        else:
+                            default_value = np.random.normal(0, 0.01)
+                    elif 'quantum' in name:
+                        # Quantum features - very small values
+                        if 'entanglement' in name:
+                            default_value = np.random.uniform(0, 0.001)
+                        elif 'coherence' in name:
+                            default_value = np.random.uniform(0, 0.1)
+                        else:
+                            default_value = np.random.normal(0, 0.0001)
+                    else:
+                        default_value = 0.0
+                elif strategy == "negative_small":
+                    # Try negative small values
+                    default_value = np.random.normal(-0.01, 0.001)
+                else:
+                    default_value = 0.0
+                
+                feature_array.append(float(default_value))
+        
+        return np.array(feature_array), missing_features
+        
+    except Exception as e:
+        st.error(f"Feature extraction failed: {e}")
+        return None, []
 
-# HTTP requests
-requests>=2.31.0
+def test_prediction_strategies(audio_file, models):
+    """Test different strategies for handling missing features"""
+    
+    st.header("🧪 Testing Different Missing Feature Strategies")
+    
+    feature_names = models['feature_names']
+    model = models['model']
+    scaler = models['scaler']
+    feature_selector = models['feature_selector']
+    label_encoder = models['label_encoder']
+    
+    strategies = {
+        "zeros": "Fill missing with zeros",
+        "small_random": "Fill with small random values",
+        "smart_defaults": "Use intelligent defaults per feature type",
+        "negative_small": "Fill with small negative values"
+    }
+    
+    results = {}
+    
+    for strategy_name, strategy_desc in strategies.items():
+        st.subheader(f"🔬 Strategy: {strategy_desc}")
+        
+        try:
+            # Extract features with this strategy
+            features, missing = extract_and_test_features(audio_file, feature_names, strategy_name)
+            
+            if features is not None:
+                st.info(f"Missing features: {len(missing)}")
+                
+                # Make prediction
+                X = features.reshape(1, -1)
+                
+                if feature_selector:
+                    X = feature_selector.transform(X)
+                if scaler:
+                    X = scaler.transform(X)
+                
+                prediction = model.predict(X)[0]
+                probabilities = model.predict_proba(X)[0]
+                
+                emotion = label_encoder.inverse_transform([prediction])[0]
+                confidence = probabilities[prediction]
+                
+                # Get all probabilities
+                emotion_probs = {}
+                for i, prob in enumerate(probabilities):
+                    emo = label_encoder.inverse_transform([i])[0]
+                    emotion_probs[emo] = prob
+                
+                results[strategy_name] = {
+                    'emotion': emotion,
+                    'confidence': confidence,
+                    'probabilities': emotion_probs
+                }
+                
+                # Display result
+                st.write(f"**Result**: {emotion} ({confidence:.1%})")
+                
+                # Show top 3
+                sorted_emotions = sorted(emotion_probs.items(), key=lambda x: x[1], reverse=True)
+                for i, (emo, prob) in enumerate(sorted_emotions[:3]):
+                    st.write(f"  {i+1}. {emo}: {prob:.1%}")
+                
+            else:
+                st.error(f"Failed to extract features with {strategy_name}")
+                
+        except Exception as e:
+            st.error(f"Strategy {strategy_name} failed: {e}")
+    
+    return results
 
-# Performance optimization (required by librosa)
-numba>=0.57.0
+def main():
+    st.title("🔍 Missing Feature Diagnostic Tool")
+    st.markdown("### 🚨 **Solving the 59 Missing Features Problem**")
+    
+    st.info("This tool will identify which features are missing and test different strategies to fix the 'disgust' bias.")
+    
+    # Analyze feature names
+    feature_names, categories = analyze_missing_features()
+    
+    # File upload
+    st.header("🎵 Upload Audio for Testing")
+    uploaded_file = st.file_uploader("Choose audio file", type=['wav', 'mp3', 'flac', 'm4a'])
+    
+    if uploaded_file is not None:
+        st.audio(uploaded_file, format='audio/wav')
+        
+        # Load models
+        models = load_models_quick()
+        
+        if all(models.values()):
+            # Test different strategies
+            results = test_prediction_strategies(uploaded_file, models)
+            
+            # Summary
+            st.header("📊 Strategy Comparison")
+            
+            if results:
+                comparison_df = pd.DataFrame([
+                    {
+                        'Strategy': strategy,
+                        'Emotion': data['emotion'],
+                        'Confidence': f"{data['confidence']:.1%}",
+                        'Top_2nd': sorted(data['probabilities'].items(), key=lambda x: x[1], reverse=True)[1][0],
+                        'Top_3rd': sorted(data['probabilities'].items(), key=lambda x: x[1], reverse=True)[2][0]
+                    }
+                    for strategy, data in results.items()
+                ])
+                
+                st.dataframe(comparison_df)
+                
+                # Recommendations
+                st.header("💡 Recommendations")
+                
+                # Check if any strategy avoids "disgust"
+                non_disgust_strategies = [s for s, r in results.items() if r['emotion'] != 'disgust']
+                
+                if non_disgust_strategies:
+                    st.success(f"✅ **Good news!** These strategies avoid 'disgust': {non_disgust_strategies}")
+                    best_strategy = non_disgust_strategies[0]
+                    st.info(f"💡 **Recommended strategy**: {best_strategy}")
+                else:
+                    st.warning("⚠️ All strategies still predict 'disgust' - the issue may be deeper")
+                    st.info("💡 **Next steps**: The model may need retraining without the synthetic features")
+        
+        else:
+            st.error("Failed to load models")
 
-# Audio format support
-ffmpeg-python>=0.2.0
-
-# Optional: Additional audio processing
-# resampy>=0.4.0
-# pysoundfile>=0.11.0
-
-# Optional: For better performance
-# llvmlite>=0.40.0
+if __name__ == "__main__":
+    main()
