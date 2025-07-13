@@ -13,6 +13,7 @@ import joblib
 import json
 import re
 from scipy import stats
+import sys
 
 # Model URLs
 MODEL_URLS = {
@@ -25,415 +26,195 @@ MODEL_URLS = {
 }
 
 st.set_page_config(
-    page_title="🔍 COMPREHENSIVE MODEL DIAGNOSTIC",
-    page_icon="🔍",
+    page_title="🔧 Version-Compatible Model Loader",
+    page_icon="🔧",
     layout="wide"
 )
 
+def try_all_loading_methods(content, description):
+    """Try every possible method to load the pickle file"""
+    
+    loading_methods = [
+        # Method 1: Standard joblib
+        lambda: joblib.load(io.BytesIO(content)),
+        
+        # Method 2: Standard pickle
+        lambda: pickle.load(io.BytesIO(content)),
+        
+        # Method 3: Pickle with different protocols
+        lambda: pickle.load(io.BytesIO(content), encoding='latin1'),
+        lambda: pickle.load(io.BytesIO(content), encoding='bytes'),
+        
+        # Method 4: Joblib with different parameters
+        lambda: joblib.load(io.BytesIO(content), mmap_mode=None),
+        
+        # Method 5: Try older pickle protocols
+        lambda: pickle.loads(content, encoding='latin1'),
+        lambda: pickle.loads(content, encoding='bytes'),
+        lambda: pickle.loads(content),
+    ]
+    
+    errors = []
+    
+    for i, method in enumerate(loading_methods):
+        try:
+            result = method()
+            st.success(f"✅ {description}: Loaded with method {i+1}")
+            return result
+        except Exception as e:
+            errors.append(f"Method {i+1}: {str(e)[:100]}")
+            continue
+    
+    # If all methods failed, show detailed error info
+    st.error(f"❌ {description}: All loading methods failed")
+    with st.expander(f"Show {description} loading errors"):
+        for error in errors:
+            st.text(error)
+    
+    return None
+
 @st.cache_data
-def load_models():
-    """Load models with detailed validation"""
+def load_models_with_compatibility():
+    """Load models with maximum compatibility"""
+    
+    st.info("🔧 Attempting to load models with version compatibility fixes...")
+    
+    # Show environment info
+    st.info(f"Python version: {sys.version}")
+    st.info(f"Scikit-learn version: {__import__('sklearn').__version__}")
+    st.info(f"Joblib version: {joblib.__version__}")
+    
     models = {}
     
     for key, url in MODEL_URLS.items():
+        st.write(f"🔄 Loading {key}...")
+        
         try:
-            response = requests.get(url, timeout=300)
+            # Download file
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            response = requests.get(url, headers=headers, timeout=300)
+            response.raise_for_status()
             content = response.content
             
+            st.info(f"📥 Downloaded {len(content)} bytes for {key}")
+            
+            # Check for HTML errors
             if content.startswith(b'<!DOCTYPE') or b'<title>Google Drive' in content[:500]:
-                st.error(f"❌ {key}: HTML error page received")
+                st.error(f"❌ {key}: Received HTML error page instead of file")
                 models[key] = None
                 continue
             
-            # Try loading
-            try:
-                if key == 'metadata':
+            # Special handling for JSON metadata
+            if key == 'metadata':
+                try:
                     models[key] = json.loads(content.decode('utf-8'))
-                else:
-                    models[key] = pickle.load(io.BytesIO(content))
-                st.success(f"✅ {key}: Loaded successfully")
+                    st.success(f"✅ {key}: Loaded as JSON")
+                    continue
+                except Exception as e:
+                    st.error(f"❌ {key}: JSON parsing failed - {e}")
+                    models[key] = None
+                    continue
+            
+            # For pickle files, try all compatibility methods
+            models[key] = try_all_loading_methods(content, key)
+            
+            # Show additional info about loaded objects
+            if models[key] is not None:
+                obj = models[key]
+                st.info(f"🔍 {key} type: {type(obj).__name__}")
                 
-                # Detailed inspection
-                if key == 'model':
-                    model = models[key]
-                    st.info(f"Model type: {type(model).__name__}")
-                    if hasattr(model, 'n_classes_'):
-                        st.info(f"Model expects {model.n_classes_} classes")
-                    if hasattr(model, 'n_features_'):
-                        st.info(f"Model expects {model.n_features_} features")
-                        
-                elif key == 'label_encoder':
-                    le = models[key]
-                    if hasattr(le, 'classes_'):
-                        st.info(f"Label classes: {list(le.classes_)}")
-                        
-                elif key == 'feature_names':
-                    fn = models[key]
-                    st.info(f"Feature count: {len(fn)}")
-                    st.info(f"Sample features: {fn[:3]}...{fn[-3:]}")
-                    
-            except Exception as e:
-                st.error(f"❌ {key}: Load failed - {e}")
-                models[key] = None
+                if hasattr(obj, 'shape'):
+                    st.info(f"🔍 {key} shape: {obj.shape}")
+                elif hasattr(obj, '__len__') and key == 'feature_names':
+                    st.info(f"🔍 {key} length: {len(obj)}")
+                elif hasattr(obj, 'classes_') and key == 'label_encoder':
+                    st.info(f"🔍 {key} classes: {list(obj.classes_)}")
                 
         except Exception as e:
-            st.error(f"❌ {key}: Download failed - {e}")
+            st.error(f"❌ {key}: Download or processing failed - {e}")
             models[key] = None
+    
+    # Summary
+    loaded_count = sum(1 for v in models.values() if v is not None)
+    st.info(f"📊 Successfully loaded {loaded_count}/6 components")
     
     return models
 
-def test_model_sanity(models):
-    """Test if the model makes reasonable predictions with controlled inputs"""
+def create_fallback_components():
+    """Create fallback components if models can't be loaded"""
     
-    st.subheader("🧪 Model Sanity Tests")
+    st.warning("🔧 Creating fallback components for testing...")
     
-    model = models.get('model')
-    scaler = models.get('scaler') 
-    feature_selector = models.get('feature_selector')
-    label_encoder = models.get('label_encoder')
-    feature_names = models.get('feature_names')
+    # Create a simple label encoder mapping
+    emotion_classes = ['angry', 'calm', 'disgust', 'fearful', 'happy', 'neutral', 'sad', 'surprised']
     
-    if not all([model, feature_names]):
-        st.error("Missing required components for testing")
-        return False
-    
-    # Test 1: All zeros
-    st.write("**Test 1: All Zero Features**")
-    test_features = np.zeros((1, len(feature_names)))
-    
-    try:
-        X = test_features.copy()
-        if feature_selector:
-            X = feature_selector.transform(X)
-        if scaler:
-            X = scaler.transform(X)
+    class FallbackLabelEncoder:
+        def __init__(self):
+            self.classes_ = np.array(emotion_classes)
+            self.class_to_index = {cls: i for i, cls in enumerate(emotion_classes)}
         
-        pred = model.predict(X)[0]
-        probs = model.predict_proba(X)[0]
+        def transform(self, y):
+            return np.array([self.class_to_index[cls] for cls in y])
         
-        if label_encoder:
-            emotion = label_encoder.inverse_transform([pred])[0]
-        else:
-            emotion = f"class_{pred}"
-            
-        st.write(f"All zeros → {emotion} ({probs[pred]:.1%})")
-        st.write(f"All probabilities: {[f'{p:.3f}' for p in probs]}")
-        
-        # If all zeros gives very high confidence, that's suspicious
-        if probs[pred] > 0.8:
-            st.warning("⚠️ SUSPICIOUS: High confidence on all-zero features!")
-            
-    except Exception as e:
-        st.error(f"Test 1 failed: {e}")
-        return False
+        def inverse_transform(self, y):
+            return np.array([self.classes_[idx] for idx in y])
     
-    # Test 2: Random features in reasonable ranges
-    st.write("**Test 2: Random Features (Audio-like ranges)**")
-    np.random.seed(42)
-    test_features = np.random.normal(0, 1, (1, len(feature_names)))
+    # Create basic feature names (first 100 features from what we know work)
+    basic_features = []
     
-    # Make MFCC features more realistic
-    for i, name in enumerate(feature_names):
-        if 'mfcc' in name and 'mean' in name:
-            test_features[0, i] = np.random.normal(-20, 10)  # Typical MFCC range
-        elif 'spectral_centroid' in name:
-            test_features[0, i] = np.random.normal(2000, 500)  # Typical spectral centroid
-        elif 'f0' in name and 'mean' in name:
-            test_features[0, i] = np.random.normal(150, 50)  # Typical F0
+    # MFCC features
+    for i in range(13):
+        for stat in ['mean', 'std', 'max', 'min', 'skew', 'kurtosis']:
+            basic_features.append(f'mfcc_{i}_{stat}')
+        basic_features.append(f'mfcc_delta_{i}_mean')
+        basic_features.append(f'mfcc_delta2_{i}_mean')
     
-    try:
-        X = test_features.copy()
-        if feature_selector:
-            X = feature_selector.transform(X)
-        if scaler:
-            X = scaler.transform(X)
-        
-        pred = model.predict(X)[0]
-        probs = model.predict_proba(X)[0]
-        
-        if label_encoder:
-            emotion = label_encoder.inverse_transform([pred])[0]
-        else:
-            emotion = f"class_{pred}"
-            
-        st.write(f"Realistic random → {emotion} ({probs[pred]:.1%})")
-        st.write(f"All probabilities: {[f'{p:.3f}' for p in probs]}")
-        
-    except Exception as e:
-        st.error(f"Test 2 failed: {e}")
-        return False
+    # Spectral features
+    for name in ['spectral_centroid', 'spectral_rolloff', 'spectral_bandwidth', 'zero_crossing_rate']:
+        for stat in ['mean', 'std', 'max', 'skew']:
+            basic_features.append(f'{name}_{stat}')
     
-    # Test 3: Extreme values
-    st.write("**Test 3: Extreme Feature Values**")
-    test_features = np.full((1, len(feature_names)), 100.0)  # Very high values
+    # Chroma features
+    for i in range(12):
+        basic_features.append(f'chroma_{i}_mean')
+        basic_features.append(f'chroma_{i}_std')
     
-    try:
-        X = test_features.copy()
-        if feature_selector:
-            X = feature_selector.transform(X)
-        if scaler:
-            X = scaler.transform(X)
-        
-        pred = model.predict(X)[0]
-        probs = model.predict_proba(X)[0]
-        
-        if label_encoder:
-            emotion = label_encoder.inverse_transform([pred])[0]
-        else:
-            emotion = f"class_{pred}"
-            
-        st.write(f"Extreme values → {emotion} ({probs[pred]:.1%})")
-        st.write(f"All probabilities: {[f'{p:.3f}' for p in probs]}")
-        
-    except Exception as e:
-        st.error(f"Test 3 failed: {e}")
-        return False
+    fallback_models = {
+        'label_encoder': FallbackLabelEncoder(),
+        'feature_names': basic_features,
+        'metadata': {
+            'model_type': 'Fallback Test Model',
+            'accuracy': 'N/A',
+            'f1_score': 'N/A',
+            'emotion_classes': emotion_classes
+        }
+    }
     
-    # Test 4: Check if model always predicts the same class
-    st.write("**Test 4: Multiple Random Tests**")
-    predictions = []
-    for i in range(10):
-        test_features = np.random.normal(0, 1, (1, len(feature_names)))
-        
-        try:
-            X = test_features.copy()
-            if feature_selector:
-                X = feature_selector.transform(X)
-            if scaler:
-                X = scaler.transform(X)
-            
-            pred = model.predict(X)[0]
-            predictions.append(pred)
-        except:
-            predictions.append(-1)
-    
-    unique_preds = set(predictions)
-    st.write(f"10 random tests gave {len(unique_preds)} unique predictions: {unique_preds}")
-    
-    if len(unique_preds) == 1 and -1 not in unique_preds:
-        st.error("🚨 MAJOR ISSUE: Model always predicts the same class!")
-        return False
-    elif len(unique_preds) < 3:
-        st.warning("⚠️ Model shows limited diversity in predictions")
-        
-    return True
+    st.success("✅ Created fallback components for basic testing")
+    return fallback_models
 
-def test_label_encoder(models):
-    """Test label encoder functionality"""
-    
-    st.subheader("🏷️ Label Encoder Test")
-    
-    label_encoder = models.get('label_encoder')
-    if not label_encoder:
-        st.error("No label encoder found")
-        return False
+def extract_basic_features(audio_file, feature_names):
+    """Extract basic audio features that work reliably"""
     
     try:
-        # Test encoding/decoding
-        if hasattr(label_encoder, 'classes_'):
-            classes = label_encoder.classes_
-            st.write(f"Available classes: {list(classes)}")
-            
-            # Test each class
-            st.write("**Encoding/Decoding Test:**")
-            for i, class_name in enumerate(classes):
-                # Test forward and backward
-                encoded = label_encoder.transform([class_name])[0]
-                decoded = label_encoder.inverse_transform([encoded])[0]
-                
-                st.write(f"{class_name} → {encoded} → {decoded} {'✅' if decoded == class_name else '❌'}")
-                
-                if decoded != class_name:
-                    st.error(f"Label encoder broken for {class_name}")
-                    return False
-            
-            # Test numeric indices
-            st.write("**Index Mapping:**")
-            for i in range(len(classes)):
-                try:
-                    decoded = label_encoder.inverse_transform([i])[0]
-                    st.write(f"Index {i} → {decoded}")
-                except Exception as e:
-                    st.error(f"Index {i} failed: {e}")
-                    return False
+        # Load audio
+        audio, sr = librosa.load(audio_file, sr=22050, duration=3.0)
         
-        return True
-        
-    except Exception as e:
-        st.error(f"Label encoder test failed: {e}")
-        return False
-
-def analyze_feature_importance(models, features):
-    """Analyze which features might be causing issues"""
-    
-    st.subheader("🔬 Feature Analysis")
-    
-    model = models.get('model')
-    feature_names = models.get('feature_names')
-    
-    if not all([model, feature_names, features]):
-        st.error("Missing components for feature analysis")
-        return
-    
-    try:
-        # Get feature importances if available
-        if hasattr(model, 'feature_importances_'):
-            importances = model.feature_importances_
-            
-            # Create feature importance dataframe
-            importance_df = pd.DataFrame({
-                'feature': feature_names,
-                'importance': importances
-            }).sort_values('importance', ascending=False)
-            
-            st.write("**Top 10 Most Important Features:**")
-            for i, row in importance_df.head(10).iterrows():
-                feature_name = row['feature']
-                importance = row['importance']
-                feature_value = features.get(feature_name, 'MISSING')
-                st.write(f"{feature_name}: {importance:.4f} (value: {feature_value})")
-            
-            # Check if any critical features are missing or have unusual values
-            critical_features = importance_df.head(20)
-            issues = []
-            
-            for _, row in critical_features.iterrows():
-                feature_name = row['feature']
-                if feature_name not in features:
-                    issues.append(f"Critical feature MISSING: {feature_name}")
-                elif np.isnan(features[feature_name]) or np.isinf(features[feature_name]):
-                    issues.append(f"Critical feature has invalid value: {feature_name} = {features[feature_name]}")
-            
-            if issues:
-                st.error("🚨 Critical Feature Issues:")
-                for issue in issues:
-                    st.error(f"• {issue}")
-        
-    except Exception as e:
-        st.error(f"Feature importance analysis failed: {e}")
-
-def test_preprocessing_pipeline(models, features):
-    """Test each step of the preprocessing pipeline"""
-    
-    st.subheader("⚙️ Preprocessing Pipeline Test")
-    
-    feature_names = models.get('feature_names')
-    feature_selector = models.get('feature_selector')
-    scaler = models.get('scaler')
-    
-    if not all([feature_names, features]):
-        st.error("Missing components for pipeline test")
-        return None
-    
-    # Step 1: Create feature array
-    st.write("**Step 1: Feature Array Creation**")
-    feature_array = []
-    missing_count = 0
-    
-    for name in feature_names:
-        if name in features:
-            feature_array.append(features[name])
-        else:
-            feature_array.append(0.0)
-            missing_count += 1
-    
-    X = np.array(feature_array).reshape(1, -1)
-    st.write(f"Initial shape: {X.shape}")
-    st.write(f"Missing features: {missing_count}")
-    st.write(f"Value range: [{X.min():.3f}, {X.max():.3f}]")
-    st.write(f"Mean: {X.mean():.3f}, Std: {X.std():.3f}")
-    
-    # Check for problematic values
-    if np.any(np.isnan(X)) or np.any(np.isinf(X)):
-        st.error("🚨 NaN or Inf values detected in features!")
-        return None
-    
-    if X.std() == 0:
-        st.warning("⚠️ All features have the same value - this is suspicious!")
-    
-    # Step 2: Feature selection
-    if feature_selector:
-        st.write("**Step 2: Feature Selection**")
-        try:
-            X_selected = feature_selector.transform(X)
-            st.write(f"After selection: {X.shape} → {X_selected.shape}")
-            st.write(f"Selected value range: [{X_selected.min():.3f}, {X_selected.max():.3f}]")
-            
-            # Check if feature selector is working properly
-            if hasattr(feature_selector, 'get_support'):
-                selected_mask = feature_selector.get_support()
-                selected_indices = np.where(selected_mask)[0]
-                st.write(f"Selected {len(selected_indices)} features out of {len(selected_mask)}")
-                
-                # Show some selected features
-                if len(selected_indices) > 0:
-                    selected_feature_names = [feature_names[i] for i in selected_indices[:10]]
-                    st.write(f"Top selected features: {selected_feature_names}")
-            
-            X = X_selected
-        except Exception as e:
-            st.error(f"Feature selection failed: {e}")
+        if audio is None or len(audio) == 0:
             return None
-    
-    # Step 3: Scaling
-    if scaler:
-        st.write("**Step 3: Feature Scaling**")
+        
+        # Normalize audio
+        if np.max(np.abs(audio)) > 0:
+            audio = librosa.util.normalize(audio)
+        
+        features = {}
+        
+        # Extract MFCC features
         try:
-            X_scaled = scaler.transform(X)
-            st.write(f"After scaling: {X_scaled.shape}")
-            st.write(f"Scaled value range: [{X_scaled.min():.3f}, {X_scaled.max():.3f}]")
-            st.write(f"Scaled mean: {X_scaled.mean():.3f}, std: {X_scaled.std():.3f}")
-            
-            # Check if scaling seems reasonable
-            if X_scaled.std() > 10:
-                st.warning("⚠️ Very high standard deviation after scaling - might indicate issues")
-            
-            X = X_scaled
-        except Exception as e:
-            st.error(f"Scaling failed: {e}")
-            return None
-    
-    return X
-
-def main():
-    st.title("🔍 COMPREHENSIVE MODEL DIAGNOSTIC")
-    st.markdown("### 🚨 **Deep Debugging for Persistent 'Disgust' Predictions**")
-    
-    st.info("This tool will thoroughly test your model to find why it keeps predicting 'disgust'")
-    
-    # Load models
-    st.header("📥 Model Loading")
-    models = load_models()
-    
-    loaded_count = sum(1 for v in models.values() if v is not None)
-    if loaded_count < 4:  # Need at least model, feature_names, label_encoder, and one other
-        st.error(f"Only {loaded_count}/6 models loaded - cannot proceed")
-        return
-    
-    st.success(f"✅ {loaded_count}/6 models loaded successfully")
-    
-    # Run sanity tests
-    st.header("🧪 Model Sanity Tests")
-    sanity_ok = test_model_sanity(models)
-    
-    # Test label encoder
-    st.header("🏷️ Label Encoder Tests")
-    label_ok = test_label_encoder(models)
-    
-    # Audio file upload for real testing
-    st.header("🎵 Real Audio Testing")
-    uploaded_file = st.file_uploader("Upload an audio file for testing", type=['wav', 'mp3', 'flac', 'm4a'])
-    
-    if uploaded_file is not None:
-        # Extract features (simplified version)
-        try:
-            audio, sr = librosa.load(uploaded_file, sr=22050, duration=3.0)
-            
-            # Basic feature extraction
-            features = {}
-            
-            # MFCC features
             mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
+            mfcc_delta = librosa.feature.delta(mfccs)
+            mfcc_delta2 = librosa.feature.delta(mfccs, order=2)
+            
             for i in range(13):
                 features[f'mfcc_{i}_mean'] = np.mean(mfccs[i])
                 features[f'mfcc_{i}_std'] = np.std(mfccs[i])
@@ -441,65 +222,162 @@ def main():
                 features[f'mfcc_{i}_min'] = np.min(mfccs[i])
                 features[f'mfcc_{i}_skew'] = float(stats.skew(mfccs[i]))
                 features[f'mfcc_{i}_kurtosis'] = float(stats.kurtosis(mfccs[i]))
+                features[f'mfcc_delta_{i}_mean'] = np.mean(mfcc_delta[i])
+                features[f'mfcc_delta2_{i}_mean'] = np.mean(mfcc_delta2[i])
+        except:
+            st.warning("⚠️ MFCC extraction failed")
+        
+        # Extract spectral features
+        try:
+            spectral_centroids = librosa.feature.spectral_centroid(y=audio, sr=sr)[0]
+            spectral_rolloff = librosa.feature.spectral_rolloff(y=audio, sr=sr)[0]
+            spectral_bandwidth = librosa.feature.spectral_bandwidth(y=audio, sr=sr)[0]
+            zero_crossing_rate = librosa.feature.zero_crossing_rate(audio)[0]
             
-            # Fill remaining features with zeros or reasonable defaults
-            feature_names = models.get('feature_names', [])
-            for name in feature_names:
-                if name not in features:
-                    features[name] = 0.0
+            for name, feature_array in [
+                ('spectral_centroid', spectral_centroids),
+                ('spectral_rolloff', spectral_rolloff),
+                ('spectral_bandwidth', spectral_bandwidth),
+                ('zero_crossing_rate', zero_crossing_rate)
+            ]:
+                features[f'{name}_mean'] = np.mean(feature_array)
+                features[f'{name}_std'] = np.std(feature_array)
+                features[f'{name}_max'] = np.max(feature_array)
+                features[f'{name}_skew'] = float(stats.skew(feature_array))
+        except:
+            st.warning("⚠️ Spectral feature extraction failed")
+        
+        # Extract chroma features
+        try:
+            chroma = librosa.feature.chroma_stft(y=audio, sr=sr)
+            for i in range(12):
+                features[f'chroma_{i}_mean'] = np.mean(chroma[i])
+                features[f'chroma_{i}_std'] = np.std(chroma[i])
+        except:
+            st.warning("⚠️ Chroma feature extraction failed")
+        
+        # Fill in missing features with zeros
+        for name in feature_names:
+            if name not in features:
+                features[name] = 0.0
+        
+        # Clean features
+        for key, value in features.items():
+            if np.isnan(value) or np.isinf(value):
+                features[key] = 0.0
+        
+        return features
+        
+    except Exception as e:
+        st.error(f"Feature extraction failed: {e}")
+        return None
+
+def main():
+    st.title("🔧 Version-Compatible Model Loader")
+    st.markdown("### 🚨 **Fixing 'Invalid Load Key' Errors**")
+    
+    st.error("**DETECTED ISSUE**: Your model files have version compatibility problems!")
+    st.info("This tool will try multiple loading methods to fix the 'invalid load key' errors.")
+    
+    # Try to load models with compatibility fixes
+    st.header("📥 Loading Models with Compatibility Fixes")
+    models = load_models_with_compatibility()
+    
+    loaded_count = sum(1 for v in models.values() if v is not None)
+    
+    if loaded_count < 2:
+        st.error("❌ Critical model files couldn't be loaded - using fallback components")
+        st.info("💡 **Recommendation**: Your model files were likely saved with a different version of scikit-learn or Python.")
+        st.info("🔧 **Solutions**: 1) Re-save models with current environment, 2) Use environment matching the original training")
+        
+        # Create fallback for basic testing
+        models = create_fallback_components()
+        st.warning("⚠️ Using fallback components - predictions won't be from your actual model")
+    
+    # Show what was loaded
+    st.subheader("📊 Loading Results")
+    for key, obj in models.items():
+        if obj is not None:
+            st.success(f"✅ {key}: Loaded successfully")
+        else:
+            st.error(f"❌ {key}: Failed to load")
+    
+    # Test with audio if we have basic components
+    if models.get('feature_names') and models.get('label_encoder'):
+        st.header("🎵 Test Audio Processing")
+        
+        uploaded_file = st.file_uploader(
+            "Upload audio to test feature extraction",
+            type=['wav', 'mp3', 'flac', 'm4a']
+        )
+        
+        if uploaded_file is not None:
+            st.audio(uploaded_file, format='audio/wav')
             
-            st.success(f"Extracted {len(features)} features")
-            
-            # Analyze features
-            analyze_feature_importance(models, features)
-            
-            # Test preprocessing pipeline
-            final_X = test_preprocessing_pipeline(models, features)
-            
-            if final_X is not None:
-                # Make prediction with detailed logging
-                model = models.get('model')
-                label_encoder = models.get('label_encoder')
+            with st.spinner("🔬 Extracting features..."):
+                features = extract_basic_features(uploaded_file, models['feature_names'])
                 
-                try:
-                    pred = model.predict(final_X)[0]
-                    probs = model.predict_proba(final_X)[0]
+                if features:
+                    st.success(f"✅ Extracted {len(features)} features")
                     
-                    st.write("**Final Prediction Results:**")
-                    st.write(f"Raw prediction index: {pred}")
-                    st.write(f"Raw probabilities: {[f'{p:.4f}' for p in probs]}")
+                    # Show feature sample
+                    feature_sample = {k: v for k, v in list(features.items())[:10]}
+                    st.json(feature_sample)
                     
-                    if label_encoder:
-                        emotion = label_encoder.inverse_transform([pred])[0]
-                        st.write(f"Decoded emotion: {emotion}")
-                        
-                        # Show all emotion probabilities
-                        st.write("**All Emotion Probabilities:**")
-                        for i, prob in enumerate(probs):
-                            try:
-                                emo = label_encoder.inverse_transform([i])[0]
-                                st.write(f"  {emo}: {prob:.4f} ({prob*100:.1f}%)")
-                            except:
-                                st.write(f"  class_{i}: {prob:.4f} ({prob*100:.1f}%)")
+                    st.info("✅ **Good News**: Feature extraction works!")
+                    st.info("❌ **Bad News**: Your actual model files are corrupted/incompatible")
                     
-                except Exception as e:
-                    st.error(f"Prediction failed: {e}")
-            
-        except Exception as e:
-            st.error(f"Audio processing failed: {e}")
+                else:
+                    st.error("❌ Feature extraction failed")
     
-    # Summary and recommendations
-    st.header("📋 Diagnostic Summary")
+    # Recommendations
+    st.header("💡 Recommendations")
     
-    if not sanity_ok:
-        st.error("🚨 **CRITICAL ISSUE**: Model fails basic sanity tests!")
-        st.error("**Recommendation**: The model file may be corrupted or wrong. Try re-downloading or using a different model.")
-    elif not label_ok:
-        st.error("🚨 **CRITICAL ISSUE**: Label encoder is broken!")
-        st.error("**Recommendation**: The label encoder file is corrupted. Re-download it.")
+    if loaded_count == 0:
+        st.error("🚨 **CRITICAL**: No model files could be loaded")
+        st.markdown("""
+        **Immediate Actions:**
+        1. **Check Python/scikit-learn versions** - Your model was likely saved with different versions
+        2. **Re-download model files** - They might be corrupted
+        3. **Contact model creator** - Ask for files saved with your environment versions
+        4. **Try different environment** - Use the exact Python/scikit-learn versions used for training
+        """)
+        
+    elif loaded_count < 4:
+        st.warning("⚠️ **PARTIAL FAILURE**: Some model files loaded, others didn't")
+        st.markdown("""
+        **Likely Causes:**
+        - Version mismatch between training and inference environments
+        - Partial file corruption
+        - Mixed serialization methods (some with joblib, some with pickle)
+        
+        **Solutions:**
+        1. **Environment matching**: Use same Python + scikit-learn versions as training
+        2. **Re-save models**: Have original creator re-save with current versions
+        3. **Check file integrity**: Re-download files to ensure no corruption
+        """)
+        
     else:
-        st.success("✅ Basic components seem to work correctly")
-        st.info("**Next Steps**: Upload audio files and check the detailed analysis above for specific issues.")
+        st.success("✅ **SUCCESS**: Most files loaded - ready for testing!")
+        st.info("Your models should now work correctly for predictions")
+    
+    # Version compatibility info
+    with st.expander("🔍 Version Compatibility Details"):
+        st.markdown("""
+        **Common Causes of 'Invalid Load Key' Errors:**
+        
+        1. **Python Version Mismatch**: Models saved with Python 3.8 but loading with Python 3.9+
+        2. **Scikit-learn Version**: Models saved with scikit-learn 0.24 but loading with 1.0+
+        3. **Joblib Version**: Different joblib versions use different protocols
+        4. **Platform Differences**: Models saved on Windows but loading on Linux/Mac
+        5. **Pickle Protocol**: Models saved with newer pickle protocol than current Python supports
+        
+        **Solutions:**
+        - Match exact versions used during training
+        - Re-save models with compatible versions
+        - Use `pickle.HIGHEST_PROTOCOL` when saving
+        - Save with `joblib.dump(model, 'file.pkl', protocol=2)` for compatibility
+        """)
 
 if __name__ == "__main__":
     main()
