@@ -11,13 +11,14 @@ from datetime import datetime
 import time
 
 # Your Google Drive URLs (from the first image)
+# CORRECTED Google Drive URLs with virus scan bypass
 MODEL_URLS = {
-    'SOTA_Ensemble': 'https://drive.google.com/uc?export=download&id=1-IvhoU5T5Mw4MJffqZPUDGjTtYst2xGX',
-    'scaler': 'https://drive.google.com/uc?export=download&id=1NfOihDG1bVnNbOglgKsSylNxiCm8_AmL',
-    'feature_selector': 'https://drive.google.com/uc?export=download&id=1Cch1ctTSdJRL2jUiZuhT7Ri2f6eGw-Et',
-    'label_encoder': 'https://drive.google.com/uc?export=download&id=1Vhf3icoC7NWprnU4mnjI5IUQ-bSLS6s0',
-    'feature_names': 'https://drive.google.com/uc?export=download&id=1C2aLUGwA1TFDwwgY0MWESggZtfR7KxmN',
-    'metadata': 'https://drive.google.com/uc?export=download&id=1X4PkHGrr2hBNgWNZ-TB8O-oznKtw-jbq'
+    'SOTA_Ensemble': 'https://drive.google.com/uc?export=download&id=1X4PkHGrr2hBNgWNZ-TB8O-oznKtw-jbq&confirm=t',  # ← 110MB model (CORRECTED)
+    'scaler': 'https://drive.google.com/uc?export=download&id=1NfOihDG1bVnNbOglgKsSylNxiCm8_AmL&confirm=t',
+    'feature_selector': 'https://drive.google.com/uc?export=download&id=1Cch1ctTSdJRL2jUiZuhT7Ri2f6eGw-Et&confirm=t',
+    'label_encoder': 'https://drive.google.com/uc?export=download&id=1Vhf3icoC7NWprnU4mnjI5IUQ-bSLS6s0&confirm=t',
+    'feature_names': 'https://drive.google.com/uc?export=download&id=1C2aLUGwA1TFDwwgY0MWESggZtfR7KxmN&confirm=t',
+    'metadata': 'https://drive.google.com/uc?export=download&id=1-IvhoU5T5Mw4MJffqZPUDGjTtYst2xGX&confirm=t'  # ← Swapped with SOTA_Ensemble
 }
 
 # Set page config
