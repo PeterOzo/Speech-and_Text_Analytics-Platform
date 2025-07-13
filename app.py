@@ -25,15 +25,15 @@ MODEL_URLS = {
 }
 
 st.set_page_config(
-    page_title="SOTA Speech Emotion Recognition",
-    page_icon="🎤",
+    page_title="SOTA Speech Emotion Recognition - DEBUG MODE",
+    page_icon="🐛",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 @st.cache_data
 def download_and_load_model(url, description):
-    """Download and load model from Google Drive URL"""
+    """Download and load model from Google Drive URL with enhanced debugging"""
     try:
         st.info(f"🔄 Downloading {description}...")
         
@@ -47,32 +47,51 @@ def download_and_load_model(url, description):
         content = response.content
         st.info(f"📊 {description}: {len(content)} bytes downloaded")
         
-        # Check for HTML (Google Drive error)
-        if content.startswith(b'<!DOCTYPE') or content.startswith(b'<html'):
+        # Enhanced HTML detection
+        content_preview = content[:200]
+        if content.startswith(b'<!DOCTYPE') or content.startswith(b'<html') or b'<title>Google Drive' in content_preview:
             st.error(f"❌ Got HTML instead of file for {description}")
+            st.error(f"Content preview: {content_preview}")
             return None
         
-        # Try loading methods
+        # Detailed loading attempts with error reporting
+        loading_errors = []
+        
+        # Try joblib first
         try:
-            # Try joblib first
             result = joblib.load(io.BytesIO(content))
             st.success(f"✅ Loaded {description} with joblib")
+            st.info(f"🔍 {description} type: {type(result)}")
+            if hasattr(result, 'shape'):
+                st.info(f"🔍 {description} shape: {result.shape}")
             return result
-        except:
-            try:
-                # Try pickle
-                result = pickle.load(io.BytesIO(content))
-                st.success(f"✅ Loaded {description} with pickle")
-                return result
-            except:
-                try:
-                    # Try JSON for metadata
-                    result = json.loads(content.decode('utf-8'))
-                    st.success(f"✅ Loaded {description} as JSON")
-                    return result
-                except:
-                    st.error(f"❌ Could not load {description}")
-                    return None
+        except Exception as e:
+            loading_errors.append(f"joblib: {str(e)}")
+        
+        # Try pickle
+        try:
+            result = pickle.load(io.BytesIO(content))
+            st.success(f"✅ Loaded {description} with pickle")
+            st.info(f"🔍 {description} type: {type(result)}")
+            if hasattr(result, 'shape'):
+                st.info(f"🔍 {description} shape: {result.shape}")
+            return result
+        except Exception as e:
+            loading_errors.append(f"pickle: {str(e)}")
+        
+        # Try JSON for metadata
+        try:
+            result = json.loads(content.decode('utf-8'))
+            st.success(f"✅ Loaded {description} as JSON")
+            st.info(f"🔍 {description} keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
+            return result
+        except Exception as e:
+            loading_errors.append(f"json: {str(e)}")
+        
+        # If all failed, show detailed errors
+        st.error(f"❌ Could not load {description}")
+        st.error(f"Loading errors: {loading_errors}")
+        return None
         
     except Exception as e:
         st.error(f"❌ Error downloading {description}: {e}")
@@ -80,7 +99,7 @@ def download_and_load_model(url, description):
 
 @st.cache_data
 def load_all_models():
-    """Load all models from the new clean URLs"""
+    """Load all models with enhanced debugging"""
     
     model_descriptions = {
         'model': 'SOTA Model',
@@ -109,6 +128,15 @@ def load_all_models():
         if models[key] is not None:
             success_count += 1
             st.success(f"🎉 {description} loaded successfully!")
+            
+            # Enhanced debugging info for each component
+            if key == 'model' and hasattr(models[key], 'classes_'):
+                st.info(f"🏷️ Model classes: {models[key].classes_}")
+            elif key == 'label_encoder' and hasattr(models[key], 'classes_'):
+                st.info(f"🏷️ Label encoder classes: {list(models[key].classes_)}")
+            elif key == 'feature_names' and isinstance(models[key], (list, np.ndarray)):
+                st.info(f"🔬 Feature count: {len(models[key])}")
+                st.info(f"🔬 First 5 features: {list(models[key])[:5]}")
         else:
             st.error(f"💥 {description} failed to load!")
         
@@ -127,20 +155,27 @@ def load_all_models():
     return models if success_count > 0 else None
 
 def extract_sota_features(audio_file, sample_rate=22050):
-    """Extract comprehensive SOTA features"""
+    """Extract comprehensive SOTA features with debugging"""
     try:
+        st.info("🎵 Starting feature extraction...")
+        
         # Load and preprocess audio
         audio, sr = librosa.load(audio_file, sr=sample_rate, duration=3.0)
         
         if audio is None or len(audio) == 0:
+            st.error("❌ Failed to load audio")
             return None
             
+        st.info(f"🎵 Audio loaded: {len(audio)} samples at {sr} Hz")
+        
         # Clean audio
         if not np.isfinite(audio).all():
             audio = np.nan_to_num(audio, nan=0.0, posinf=0.0, neginf=0.0)
+            st.warning("⚠️ Cleaned infinite/NaN values from audio")
             
         if np.max(np.abs(audio)) > 0:
             audio = librosa.util.normalize(audio)
+            st.info("✅ Audio normalized")
         
         features = {}
         
@@ -159,7 +194,10 @@ def extract_sota_features(audio_file, sample_rate=22050):
                 features[f'mfcc_{i}_kurtosis'] = float(stats.kurtosis(mfccs[i]))
                 features[f'mfcc_delta_{i}_mean'] = np.mean(mfcc_delta[i])
                 features[f'mfcc_delta2_{i}_mean'] = np.mean(mfcc_delta2[i])
-        except:
+            
+            st.info(f"✅ Extracted {13*8} MFCC features")
+        except Exception as e:
+            st.warning(f"⚠️ MFCC extraction failed: {e}")
             # Fallback MFCC
             for i in range(13):
                 for stat in ['mean', 'std', 'max', 'min', 'skew', 'kurtosis']:
@@ -184,7 +222,10 @@ def extract_sota_features(audio_file, sample_rate=22050):
                 features[f'{name}_std'] = np.std(feature_array)
                 features[f'{name}_max'] = np.max(feature_array)
                 features[f'{name}_skew'] = float(stats.skew(feature_array))
-        except:
+            
+            st.info("✅ Extracted spectral features")
+        except Exception as e:
+            st.warning(f"⚠️ Spectral extraction failed: {e}")
             # Fallback spectral
             for name in ['spectral_centroid', 'spectral_rolloff', 'spectral_bandwidth', 'zero_crossing_rate']:
                 for stat in ['mean', 'std', 'max', 'skew']:
@@ -196,7 +237,10 @@ def extract_sota_features(audio_file, sample_rate=22050):
             for i in range(12):
                 features[f'chroma_{i}_mean'] = np.mean(chroma[i])
                 features[f'chroma_{i}_std'] = np.std(chroma[i])
-        except:
+            
+            st.info("✅ Extracted chroma features")
+        except Exception as e:
+            st.warning(f"⚠️ Chroma extraction failed: {e}")
             for i in range(12):
                 features[f'chroma_{i}_mean'] = 0.0
                 features[f'chroma_{i}_std'] = 0.0
@@ -235,41 +279,63 @@ def extract_sota_features(audio_file, sample_rate=22050):
             features['energy_skew'] = float(stats.skew(rms))
             features['energy_kurtosis'] = float(stats.kurtosis(rms))
             
-        except:
+            st.info("✅ Extracted prosodic features")
+        except Exception as e:
+            st.warning(f"⚠️ Prosodic extraction failed: {e}")
             for feat in ['f0_mean', 'f0_std', 'f0_range', 'f0_jitter', 'f0_shimmer', 
                         'f0_slope', 'f0_curvature', 'energy_mean', 'energy_std', 'energy_skew', 'energy_kurtosis']:
                 features[feat] = 0.0
         
-        # 5. Advanced placeholder features (for compatibility)
-        # Vision Transformer features
-        for i in range(50):
-            features[f'vit_feature_{i}'] = 0.0
+        # REMOVE PLACEHOLDER FEATURES - THESE MIGHT BE CAUSING ISSUES
+        # Comment out or remove these if your model wasn't trained with them
+        if st.session_state.get('include_placeholder_features', False):
+            # 5. Advanced placeholder features (for compatibility)
+            # Vision Transformer features
+            for i in range(50):
+                features[f'vit_feature_{i}'] = 0.0
+                
+            # Graph features
+            for feat in ['graph_nodes', 'graph_edges', 'graph_density', 'graph_avg_clustering', 'graph_avg_degree', 'graph_degree_std']:
+                features[feat] = 0.0
+                
+            # Quantum features
+            for feat in ['quantum_entanglement_mean', 'quantum_entanglement_std', 'quantum_coherence']:
+                features[feat] = 0.0
             
-        # Graph features
-        for feat in ['graph_nodes', 'graph_edges', 'graph_density', 'graph_avg_clustering', 'graph_avg_degree', 'graph_degree_std']:
-            features[feat] = 0.0
-            
-        # Quantum features
-        for feat in ['quantum_entanglement_mean', 'quantum_entanglement_std', 'quantum_coherence']:
-            features[feat] = 0.0
+            st.warning("⚠️ Added placeholder features - these might cause prediction issues!")
         
         # Clean features
         for key, value in features.items():
             if np.isnan(value) or np.isinf(value):
                 features[key] = 0.0
         
+        st.success(f"✅ Total features extracted: {len(features)}")
+        
+        # Show feature summary
+        if st.session_state.get('show_feature_details', False):
+            st.subheader("🔍 Feature Details")
+            feature_df = pd.DataFrame(
+                [(k, v) for k, v in features.items()],
+                columns=['Feature', 'Value']
+            )
+            st.dataframe(feature_df.head(20))  # Show first 20 features
+        
         return features
         
     except Exception as e:
         st.error(f"Error extracting features: {str(e)}")
+        import traceback
+        st.error(f"Traceback: {traceback.format_exc()}")
         return None
 
 def predict_emotion(features, models):
-    """Clean prediction pipeline with proper model organization"""
+    """Enhanced prediction pipeline with comprehensive debugging"""
     try:
         if not features:
             st.error("No features extracted")
             return None, None, None
+        
+        st.subheader("🔍 DEBUG: Prediction Pipeline")
         
         # Get models (now properly organized)
         sota_model = models.get('model')
@@ -278,45 +344,77 @@ def predict_emotion(features, models):
         label_encoder = models.get('label_encoder')
         feature_names = models.get('feature_names')
         
+        # Detailed component checking
+        st.write("**Model Components Status:**")
+        components = {
+            'SOTA Model': sota_model,
+            'Feature Scaler': scaler,
+            'Feature Selector': feature_selector,
+            'Label Encoder': label_encoder,
+            'Feature Names': feature_names
+        }
+        
+        for name, component in components.items():
+            if component is not None:
+                st.write(f"✅ {name}: {type(component).__name__}")
+                if hasattr(component, 'classes_') and name == 'Label Encoder':
+                    st.write(f"   Classes: {list(component.classes_)}")
+            else:
+                st.write(f"❌ {name}: Missing")
+        
         if not all([sota_model, feature_names]):
             st.error("Missing required models")
             return None, None, None
         
-        st.info(f"🔬 Using {len(feature_names)} features for prediction...")
+        st.info(f"🔬 Expected features: {len(feature_names)}")
+        st.info(f"🔬 Extracted features: {len(features)}")
         
         # Create feature array in correct order
         feature_array = []
         missing_features = []
+        present_features = []
         
         for name in feature_names:
             if name in features:
                 feature_array.append(features[name])
+                present_features.append(name)
             else:
                 feature_array.append(0.0)
                 missing_features.append(name)
         
-        if missing_features and len(missing_features) < 50:
-            st.info(f"Using defaults for {len(missing_features)} missing features")
+        st.write(f"**Feature Matching:**")
+        st.write(f"✅ Present: {len(present_features)}")
+        st.write(f"❌ Missing: {len(missing_features)}")
+        
+        if missing_features and len(missing_features) < 20:  # Show missing features if not too many
+            st.write(f"**Missing features:** {missing_features}")
         
         # Convert to numpy array
         X = np.array(feature_array).reshape(1, -1)
-        st.info(f"📊 Feature vector shape: {X.shape}")
+        st.info(f"📊 Initial feature vector shape: {X.shape}")
+        st.info(f"📊 Feature vector stats: min={X.min():.3f}, max={X.max():.3f}, mean={X.mean():.3f}")
         
         # Apply feature selection if available
         if feature_selector and hasattr(feature_selector, 'transform'):
             try:
+                X_before = X.copy()
                 X = feature_selector.transform(X)
-                st.info(f"✅ Applied feature selection: {X.shape[1]} features selected")
+                st.info(f"✅ Feature selection: {X_before.shape[1]} → {X.shape[1]} features")
+                st.info(f"📊 After selection stats: min={X.min():.3f}, max={X.max():.3f}, mean={X.mean():.3f}")
             except Exception as e:
-                st.warning(f"⚠️ Feature selection failed: {e}")
+                st.error(f"⚠️ Feature selection failed: {e}")
+                return None, None, None
         
         # Apply scaling if available
         if scaler and hasattr(scaler, 'transform'):
             try:
+                X_before = X.copy()
                 X = scaler.transform(X)
                 st.info(f"✅ Applied feature scaling")
+                st.info(f"📊 After scaling stats: min={X.min():.3f}, max={X.max():.3f}, mean={X.mean():.3f}")
             except Exception as e:
-                st.warning(f"⚠️ Scaling failed: {e}")
+                st.error(f"⚠️ Scaling failed: {e}")
+                return None, None, None
         
         # Make prediction
         if not hasattr(sota_model, 'predict'):
@@ -326,9 +424,17 @@ def predict_emotion(features, models):
         try:
             prediction = sota_model.predict(X)[0]
             probabilities = sota_model.predict_proba(X)[0]
-            st.success(f"✅ Model prediction successful!")
+            
+            st.write(f"**Raw Prediction Results:**")
+            st.write(f"🎯 Predicted class index: {prediction}")
+            st.write(f"🎲 Probabilities shape: {probabilities.shape}")
+            st.write(f"🎲 Max probability: {probabilities.max():.3f}")
+            st.write(f"🎲 All probabilities: {[f'{p:.3f}' for p in probabilities]}")
+            
         except Exception as e:
             st.error(f"❌ Prediction failed: {e}")
+            import traceback
+            st.error(f"Traceback: {traceback.format_exc()}")
             return None, None, None
         
         # Decode labels
@@ -337,21 +443,30 @@ def predict_emotion(features, models):
                 emotion = label_encoder.inverse_transform([prediction])[0]
                 confidence = probabilities[prediction]
                 
+                st.write(f"**Label Decoding:**")
+                st.write(f"🏷️ Predicted emotion: {emotion}")
+                st.write(f"🎲 Confidence: {confidence:.1%}")
+                
                 # Get all emotion probabilities
                 emotion_probs = {}
                 for i, prob in enumerate(probabilities):
                     try:
                         emo = label_encoder.inverse_transform([i])[0]
                         emotion_probs[emo] = prob
+                        st.write(f"   {emo}: {prob:.3f}")
                     except:
                         emotion_probs[f'emotion_{i}'] = prob
+                        st.write(f"   emotion_{i}: {prob:.3f}")
                 
                 return emotion, confidence, emotion_probs
                 
             except Exception as e:
-                st.warning(f"⚠️ Label decoding failed: {e}")
+                st.error(f"⚠️ Label decoding failed: {e}")
+                import traceback
+                st.error(f"Traceback: {traceback.format_exc()}")
         
         # Fallback with standard emotion mapping
+        st.warning("Using fallback emotion mapping")
         emotion_map = {0: 'angry', 1: 'calm', 2: 'disgust', 3: 'fearful', 
                       4: 'happy', 5: 'neutral', 6: 'sad', 7: 'surprised'}
         
@@ -361,6 +476,11 @@ def predict_emotion(features, models):
         emotion_probs = {emotion_map.get(i, f'emotion_{i}'): prob 
                         for i, prob in enumerate(probabilities)}
         
+        st.write(f"**Fallback Results:**")
+        st.write(f"🏷️ Mapped emotion: {emotion}")
+        for emo, prob in emotion_probs.items():
+            st.write(f"   {emo}: {prob:.3f}")
+        
         return emotion, confidence, emotion_probs
         
     except Exception as e:
@@ -369,79 +489,20 @@ def predict_emotion(features, models):
         st.error(f"Traceback: {traceback.format_exc()}")
         return None, None, None
 
-def validate_new_model(models):
-    """Validate the new model"""
-    st.subheader("🔍 New Model Validation")
-    
-    sota_model = models.get('model')
-    label_encoder = models.get('label_encoder')
-    feature_selector = models.get('feature_selector')
-    scaler = models.get('scaler')
-    metadata = models.get('metadata')
-    
-    if not sota_model:
-        st.error("❌ No model found")
-        return False
-    
-    try:
-        # Model info
-        st.info(f"📊 Model type: {type(sota_model).__name__}")
-        
-        # Check ensemble components if applicable
-        if hasattr(sota_model, 'estimators_'):
-            st.info(f"🤖 Ensemble components: {len(sota_model.estimators_)}")
-            try:
-                for i, estimator in enumerate(sota_model.estimators_):
-                    if hasattr(estimator, '__class__'):
-                        st.info(f"  {i+1}. {type(estimator).__name__}")
-            except:
-                st.info("  (Could not enumerate estimators)")
-        
-        # Label encoder info
-        if label_encoder and hasattr(label_encoder, 'classes_'):
-            st.info(f"🏷️ Emotion classes: {list(label_encoder.classes_)}")
-        
-        # Feature selector info
-        if feature_selector and hasattr(feature_selector, 'k'):
-            st.info(f"🔍 Feature selector k: {feature_selector.k}")
-        
-        # Scaler info
-        if scaler:
-            st.info(f"📊 Scaler type: {type(scaler).__name__}")
-        
-        # Metadata info
-        if metadata:
-            st.info("📋 Model metadata available")
-            if isinstance(metadata, dict):
-                for key, value in list(metadata.items())[:5]:  # Show first 5 items
-                    st.info(f"  {key}: {value}")
-        
-        # Test prediction
-        st.info("🧪 Testing prediction pipeline...")
-        test_features = {f'feature_{i}': np.random.random() for i in range(100)}
-        
-        emotion, confidence, probs = predict_emotion(test_features, models)
-        
-        if emotion and confidence:
-            st.success(f"✅ Prediction test successful: {emotion} ({confidence:.1%})")
-            return True
-        else:
-            st.error("❌ Prediction test failed")
-            return False
-        
-    except Exception as e:
-        st.error(f"❌ Validation failed: {e}")
-        return False
-
 def main():
     # Header
-    st.title("🎤 NEW SOTA Speech Emotion Recognition")
-    st.markdown("### 🔬 **Fresh Model** | 2024-2025 Research Breakthrough")
+    st.title("🐛 SOTA Speech Emotion Recognition - DEBUG MODE")
+    st.markdown("### 🔬 **Debugging Model Performance Issues**")
     st.markdown("**Author:** Peter Chika Ozo-ogueji (Data Scientist)")
+    
+    # Debugging controls
+    st.sidebar.header("🐛 Debug Controls")
+    st.session_state['show_feature_details'] = st.sidebar.checkbox("Show Feature Details", False)
+    st.session_state['include_placeholder_features'] = st.sidebar.checkbox("Include Placeholder Features", False)
     
     # Sidebar
     st.sidebar.header("📊 Model Information")
-    st.sidebar.info("🔄 Loading new SOTA models...")
+    st.sidebar.info("🔄 Loading models with enhanced debugging...")
     
     # Load models
     models = load_all_models()
@@ -456,6 +517,8 @@ def main():
     failed_models = [k for k, v in models.items() if v is None]
     
     st.sidebar.success(f"✅ Loaded: {len(loaded_models)}/6 models")
+    if failed_models:
+        st.sidebar.error(f"❌ Failed: {failed_models}")
     
     # Display metadata if available
     metadata = models.get('metadata')
@@ -483,11 +546,7 @@ def main():
             st.warning(f"⚠️ Missing: {', '.join(missing_required)}")
             st.info("⏳ Some models failed to load...")
         else:
-            st.success("✅ NEW MODEL READY FOR PREDICTIONS! 🎉")
-            
-            # Optional validation
-            if st.checkbox("🧪 Validate new model (optional)"):
-                validate_new_model(models)
+            st.success("✅ MODELS READY FOR DEBUG PREDICTIONS! 🎉")
             
             # File uploader
             uploaded_file = st.file_uploader(
@@ -500,7 +559,7 @@ def main():
                 st.audio(uploaded_file, format='audio/wav')
                 
                 # Extract features and predict
-                with st.spinner('🔬 Analyzing audio with NEW SOTA model...'):
+                with st.spinner('🔬 Analyzing audio with DEBUG mode...'):
                     features = extract_sota_features(uploaded_file)
                     
                     if features:
@@ -511,8 +570,17 @@ def main():
                             st.success(f"🎯 **Predicted Emotion:** {emotion.title()}")
                             st.info(f"🎲 **Confidence:** {confidence:.1%}")
                             
+                            # Check if prediction makes sense
+                            if emotion == 'disgust' and confidence > 0.8:
+                                st.warning("⚠️ **POTENTIAL ISSUE**: High confidence disgust prediction may indicate a problem!")
+                                st.info("💡 This could be caused by:")
+                                st.info("• Feature mismatch between training and inference")
+                                st.info("• Incorrect label encoding")
+                                st.info("• Model corruption during download")
+                                st.info("• Wrong preprocessing pipeline order")
+                            
                             # Emotion probabilities chart
-                            st.subheader("📊 NEW SOTA Model Predictions")
+                            st.subheader("📊 DEBUG Model Predictions")
                             
                             prob_df = pd.DataFrame(
                                 list(emotion_probs.items()),
@@ -524,7 +592,7 @@ def main():
                                 x='Probability', 
                                 y='Emotion',
                                 orientation='h',
-                                title=f"New SOTA Model Emotion Predictions",
+                                title=f"DEBUG: Model Emotion Predictions",
                                 color='Probability',
                                 color_continuous_scale='viridis'
                             )
@@ -538,7 +606,7 @@ def main():
                                 st.write(f"{i+1}. **{emo.title()}**: {prob:.1%}")
     
     with col2:
-        st.header("🏆 NEW Model Info")
+        st.header("🐛 DEBUG Info")
         
         if metadata and isinstance(metadata, dict):
             # Display metrics from metadata
@@ -557,17 +625,17 @@ def main():
             else:
                 st.markdown(f"• **{key.title()}**: ❌ Missing")
         
-        # SOTA techniques
-        st.subheader("🔬 SOTA Techniques")
-        techniques = [
-            "Advanced Feature Engineering",
-            "Ensemble Learning",
-            "Cross-corpus Validation", 
-            "Robust Preprocessing",
-            "Modern ML Architecture"
+        # Debug recommendations
+        st.subheader("🔧 Debug Recommendations")
+        recommendations = [
+            "Check if feature names match training",
+            "Verify label encoder classes",
+            "Test with known good audio samples",
+            "Check preprocessing pipeline order",
+            "Validate model file integrity"
         ]
-        for technique in techniques:
-            st.markdown(f"• {technique}")
+        for rec in recommendations:
+            st.markdown(f"• {rec}")
 
 if __name__ == "__main__":
     main()
