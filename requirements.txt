@@ -4,11 +4,13 @@ numpy==1.26.4
 pandas==2.2.2
 scipy==1.13.1
 
-# Audio processing - flexible versions for better compatibility
+# Audio processing - with pinned compatible versions
 librosa==0.10.1
 soundfile==0.12.1
-# Let pip find the best compatible numba version
-numba>=0.56.0,<0.60.0
+
+# Numba with specific compatible versions (fixes llvmlite build error)
+numba==0.57.1
+llvmlite==0.40.1
 
 # Machine learning
 scikit-learn==1.5.1
