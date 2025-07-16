@@ -1,7 +1,7 @@
 build-essential
 ffmpeg
 libportaudio2
-libportaudio-dev
+portaudio19-dev
 python3-dev
 pkg-config
 llvm-11-dev
