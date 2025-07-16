@@ -1,16 +1,11 @@
-# Core dependencies - minimal versions for compatibility
+# Core dependencies
 streamlit==1.28.2
 numpy==1.26.4
 pandas==2.2.2
 scipy==1.13.1
 
-# Audio processing - with pinned compatible versions
-librosa==0.10.1
+# Audio processing - basic libraries only
 soundfile==0.12.1
-
-# Numba with specific compatible versions (fixes llvmlite build error)
-numba==0.57.1
-llvmlite==0.40.1
 
 # Machine learning
 scikit-learn==1.5.1
@@ -27,3 +22,8 @@ requests==2.32.3
 # Additional dependencies
 python-dateutil==2.9.0
 tqdm==4.66.4
+
+# Alternative audio processing (if needed)
+pydub==0.25.1
+wave
+io
