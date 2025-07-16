@@ -1,1 +1,35 @@
+[theme]
+# Professional theme for AnalyticsPro
+primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8f9fa"
+textColor = "#262730"
+font = "sans serif"
 
+[server]
+# Server configuration
+maxUploadSize = 200  # MB - for audio files
+enableCORS = false
+enableXsrfProtection = true
+
+[browser]
+# Browser settings
+gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501
+
+[client]
+# Client settings
+showErrorDetails = true
+toolbarMode = "minimal"
+
+[runner]
+# Runner settings
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true
+
+[deprecation]
+# Disable deprecation warnings in production
+showfileUploaderEncoding = false
+showPyplotGlobalUse = false
