@@ -1,41 +1,28 @@
-# Core dependencies for AnalyticsPro Speech Emotion Recognition
-# Updated for Python 3.13 compatibility
-
+# Core dependencies - minimal versions for compatibility
 streamlit==1.28.2
-numpy==1.26.4  # Updated for Python 3.13 support
-pandas==2.2.2  # Updated for compatibility
-scipy==1.13.1  # Updated for compatibility
+numpy==1.26.4
+pandas==2.2.2
+scipy==1.13.1
 
-# Audio processing
-librosa==0.10.2  # Latest version
+# Audio processing - specific versions for stability
+librosa==0.10.1
 soundfile==0.12.1
-audioread==3.0.1
 
 # Machine learning
-scikit-learn==1.5.1  # Updated for Python 3.13
-joblib==1.4.2  # Updated
-xgboost==2.1.0  # Updated
-lightgbm==4.5.0  # Updated
+scikit-learn==1.5.1
+joblib==1.4.2
+
+# Note: xgboost and lightgbm are in the saved model file
+# They don't need to be installed separately for inference
 
 # Visualization
-matplotlib==3.9.1  # Updated for Python 3.13
-seaborn==0.13.2  # Updated
-plotly==5.22.0  # Updated
+matplotlib==3.9.1
+seaborn==0.13.2
+plotly==5.22.0
 
-# Web requests for model loading
-requests==2.32.3  # Updated
+# Web requests
+requests==2.32.3
 
-# Audio dependencies - REMOVED numba due to Python 3.13 incompatibility
-# numba is optional for librosa, it will work without it
-# If you need numba, you'll need to use Python 3.12 or lower
-
-# Additional audio dependencies
-resampy==0.4.3  # Updated
-
-# Optional but recommended
-pydub==0.25.1
-ffmpeg-python==0.2.0
-
-# Utility packages
-tqdm==4.66.4  # Updated
-python-dateutil==2.9.0.post0  # Updated
+# Additional dependencies
+python-dateutil==2.9.0
+tqdm==4.66.4
