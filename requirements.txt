@@ -1,36 +1,41 @@
 # Core dependencies for AnalyticsPro Speech Emotion Recognition
+# Updated for Python 3.13 compatibility
+
 streamlit==1.28.2
-numpy==1.24.3
-pandas==2.0.3
-scipy==1.11.4
+numpy==1.26.4  # Updated for Python 3.13 support
+pandas==2.2.2  # Updated for compatibility
+scipy==1.13.1  # Updated for compatibility
 
 # Audio processing
-librosa==0.10.1
+librosa==0.10.2  # Latest version
 soundfile==0.12.1
 audioread==3.0.1
 
 # Machine learning
-scikit-learn==1.3.2
-joblib==1.3.2
-xgboost==2.0.2
-lightgbm==4.1.0
+scikit-learn==1.5.1  # Updated for Python 3.13
+joblib==1.4.2  # Updated
+xgboost==2.1.0  # Updated
+lightgbm==4.5.0  # Updated
 
 # Visualization
-matplotlib==3.7.2
-seaborn==0.13.0
-plotly==5.18.0
+matplotlib==3.9.1  # Updated for Python 3.13
+seaborn==0.13.2  # Updated
+plotly==5.22.0  # Updated
 
 # Web requests for model loading
-requests==2.31.0
+requests==2.32.3  # Updated
+
+# Audio dependencies - REMOVED numba due to Python 3.13 incompatibility
+# numba is optional for librosa, it will work without it
+# If you need numba, you'll need to use Python 3.12 or lower
 
 # Additional audio dependencies
-numba==0.58.1  # Required by librosa for performance
-resampy==0.4.2  # Required by librosa for resampling
+resampy==0.4.3  # Updated
 
-# Optional but recommended for better audio format support
-pydub==0.25.1  # For additional audio format handling
-ffmpeg-python==0.2.0  # For FFmpeg integration (if needed)
+# Optional but recommended
+pydub==0.25.1
+ffmpeg-python==0.2.0
 
 # Utility packages
-tqdm==4.66.1  # Progress bars (used in feature extraction)
-python-dateutil==2.8.2  # Date handling
+tqdm==4.66.4  # Updated
+python-dateutil==2.9.0.post0  # Updated
