@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3 
 """
 AnalyticsPro - Speech Emotion Recognition Platform
 Professional Streamlit Application for Audio Emotion Analysis
