@@ -449,7 +449,7 @@ streamlit run app.py
 ```
 
 ### **Production Deployment**
-The application is deployed on Streamlit Cloud with automatic scaling and monitoring. Access the live demo at: [AnalyticsPro Platform](https://speech-and-text-analytics-platform-tmu4tawg2mprtijz5f6bdb.streamlit.app/)
+The application is deployed on Streamlit Cloud with automatic scaling and monitoring. Access the live demo at: [AnalyticsPro Platform](https://speech-and-text-analytics-platform-kqdgy2ns3bjmhqt9c26ysa.streamlit.app/)
 
 ### **API Integration**
 ```python
