@@ -14,7 +14,7 @@ Click the Live Demo tab above for a visual tour of the Speech Emotion Recognitio
 
 ![AnalyticsPro Platform](https://via.placeholder.com/800x400/1f77b4/ffffff?text=AnalyticsPro+Speech+Emotion+Recognition+Platform)
 
-**AnalyticsPro** is a cutting-edge speech emotion recognition platform that leverages advanced machine learning ensemble methods to analyze audio recordings and predict emotional states with industry-leading accuracy. Built with 191 clean audio features and no synthetic data augmentation, this production-ready system delivers reliable emotion detection for healthcare, customer service, education, and research applications.
+**AnalyticsPro** is a cutting-edge speech emotion recognition platform that leverages advanced machine learning ensemble methods to analyze audio recordings and predict emotional states with industry-leading accuracy. Built with 191 clean audio features, this production-ready system delivers reliable emotion detection for healthcare, customer service, education, and research applications.
 
 ## 🎯 Business Question
 
