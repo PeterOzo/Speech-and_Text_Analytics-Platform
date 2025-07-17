@@ -201,47 +201,49 @@ def load_models():
     """Load all models and components from remote sources"""
     with st.spinner("🔄 Loading AnalyticsPro models..."):
         try:
+            from huggingface_hub import hf_hub_download
             components = {}
             progress_bar = st.progress(0)
             
-            # Load Hugging Face model first
+            # Load Hugging Face model using the official hub library
             st.text("Loading model from Hugging Face...")
             try:
-                # Try multiple URL formats for Hugging Face
-                hf_urls = [
-                    'https://huggingface.co/PetAnn/sota-speech-emotion-model/resolve/main/sota_xgboost_model.pkl?download=true',
-                    'https://huggingface.co/PetAnn/sota-speech-emotion-model/resolve/main/sota_xgboost_model.pkl',
-                    'https://huggingface.co/PetAnn/sota-speech-emotion-model/blob/main/sota_xgboost_model.pkl?download=true'
-                ]
+                # Download the model file using huggingface_hub
+                model_path = hf_hub_download(
+                    repo_id="PetAnn/sota-speech-emotion-model",
+                    filename="sota_xgboost_model.pkl",
+                    cache_dir=tempfile.gettempdir()
+                )
                 
-                model_loaded = False
-                for url in hf_urls:
-                    try:
-                        headers = {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                        }
-                        response = requests.get(url, timeout=120, headers=headers, stream=True)
-                        if response.status_code == 200:
-                            # Save to temporary file
-                            with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_file:
-                                for chunk in response.iter_content(chunk_size=8192):
-                                    tmp_file.write(chunk)
-                                tmp_file_path = tmp_file.name
-                            
-                            # Load model
-                            components['model'] = joblib.load(tmp_file_path)
-                            os.unlink(tmp_file_path)
-                            model_loaded = True
-                            break
-                    except Exception as e:
-                        continue
+                # Load the model
+                components['model'] = joblib.load(model_path)
+                st.text("✅ Model loaded successfully from Hugging Face")
                 
-                if not model_loaded:
-                    raise Exception("Failed to load model from all attempted URLs")
-                    
             except Exception as e:
                 st.error(f"Failed to load model from Hugging Face: {str(e)}")
-                return None
+                # Fallback to direct URL method
+                st.text("Trying fallback URL method...")
+                try:
+                    url = 'https://huggingface.co/PetAnn/sota-speech-emotion-model/resolve/main/sota_xgboost_model.pkl'
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                    response = requests.get(url, timeout=180, headers=headers, stream=True)
+                    response.raise_for_status()
+                    
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_file:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            if chunk:
+                                tmp_file.write(chunk)
+                        tmp_file_path = tmp_file.name
+                    
+                    components['model'] = joblib.load(tmp_file_path)
+                    os.unlink(tmp_file_path)
+                    st.text("✅ Model loaded via fallback method")
+                    
+                except Exception as e2:
+                    st.error(f"All methods failed. Hugging Face error: {str(e)}. Fallback error: {str(e2)}")
+                    return None
             
             progress_bar.progress(1/6)
             
@@ -256,24 +258,29 @@ def load_models():
             
             for i, (name, url) in enumerate(other_urls.items(), 2):
                 st.text(f"Loading {name}...")
-                response = requests.get(url, timeout=60)
-                response.raise_for_status()
-                
-                # Save to temporary file
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_file:
-                    tmp_file.write(response.content)
-                    tmp_file_path = tmp_file.name
-                
-                # Load component
-                if name == 'metadata':
-                    with open(tmp_file_path, 'r') as f:
-                        components[name] = json.load(f)
-                else:
-                    components[name] = joblib.load(tmp_file_path)
-                
-                # Clean up
-                os.unlink(tmp_file_path)
-                progress_bar.progress(i / 6)
+                try:
+                    response = requests.get(url, timeout=60)
+                    response.raise_for_status()
+                    
+                    # Save to temporary file
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_file:
+                        tmp_file.write(response.content)
+                        tmp_file_path = tmp_file.name
+                    
+                    # Load component
+                    if name == 'metadata':
+                        with open(tmp_file_path, 'r') as f:
+                            components[name] = json.load(f)
+                    else:
+                        components[name] = joblib.load(tmp_file_path)
+                    
+                    # Clean up
+                    os.unlink(tmp_file_path)
+                    progress_bar.progress(i / 6)
+                    
+                except Exception as e:
+                    st.error(f"Failed to load {name}: {str(e)}")
+                    return None
             
             st.success("✅ All models loaded successfully!")
             return components
@@ -282,6 +289,7 @@ def load_models():
             st.error(f"❌ Error loading models: {str(e)}")
             st.error("Please check that all files are publicly accessible")
             return None
+            
 class CleanAudioFeatureExtractor:
     """Clean audio feature extraction - NO SYNTHETIC FEATURES"""
     
