@@ -176,7 +176,7 @@ if 'batch_results' not in st.session_state:
 
 # Model URLs
 MODEL_URLS = {
-    'model': 'https://huggingface.co/PetAnn/sota-speech-emotion-model/resolve/main/sota_xgboost_model.pkl?download=true',
+    'model': 'https://huggingface.co/PetAnn/sota-speech-emotion-model/resolve/main/sota_xgboost_model.pkl',
     'scaler': 'https://drive.google.com/uc?export=download&id=15zLOfO24Mm8k_XIPhTLrUQ2tZtEIqjzV',
     'metadata': 'https://drive.google.com/uc?export=download&id=1Snkn5nXGFfqzh8yNtyGbCtSwzSbCcNdr',
     'encoder': 'https://drive.google.com/uc?export=download&id=1lfCVCWHXvmwTSIx-f75kDk47FRCqH-5n',
