@@ -7,20 +7,20 @@ textColor = "#262730"
 font = "sans serif"
 
 [server]
-# Server configuration
-maxUploadSize = 200  # MB - for audio files
+# Server configuration for cloud deployment
+headless = true
+maxUploadSize = 200
 enableCORS = false
-enableXsrfProtection = true
+enableXsrfProtection = false
+port = 8501
 
 [browser]
 # Browser settings
 gatherUsageStats = false
-serverAddress = "localhost"
-serverPort = 8501
 
 [client]
 # Client settings
-showErrorDetails = true
+showErrorDetails = false
 toolbarMode = "minimal"
 
 [runner]
