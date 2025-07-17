@@ -691,7 +691,7 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.image("https://via.placeholder.com/300x100/1f77b4/ffffff?text=AnalyticsPro", use_column_width=True)
+        st.image("https://via.placeholder.com/300x100/1f77b4/ffffff?text=AnalyticsPro", use_container_width=True)
         
         st.markdown("### 🎯 About AnalyticsPro")
         st.info("""
