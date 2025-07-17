@@ -12,7 +12,7 @@
 
 Click the Live Demo tab above for a visual tour of the Speech Emotion Recognition Platform!
 
-![AnalyticsPro Platform](https://speech-and-text-analytics-platform-kqdgy2ns3bjmhqt9c26ysa.streamlit.app/) 
+[AnalyticsPro Platform](https://speech-and-text-analytics-platform-kqdgy2ns3bjmhqt9c26ysa.streamlit.app/) 
 
 <img width="1851" height="803" alt="image" src="https://github.com/user-attachments/assets/ef7a24ca-6a8b-4d5d-9181-5a7ba59a76a7" />
 
