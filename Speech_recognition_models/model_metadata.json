@@ -1,0 +1,39 @@
+{
+  "model_type": "Clean Audio-Only Clean Ensemble",
+  "author": "Peter Chika Ozo-ogueji (Data Scientist)",
+  "accuracy": 0.8202093764223942,
+  "f1_score": 0.831482614388386,
+  "feature_count": 191,
+  "emotion_classes": [
+    "angry",
+    "calm",
+    "disgust",
+    "fearful",
+    "happy",
+    "neutral",
+    "sad",
+    "surprised"
+  ],
+  "dataset_sources": [
+    "RAVDESS Audio-Only",
+    "CREMA-D Audio",
+    "TESS Clean Audio"
+  ],
+  "sota_techniques": [
+    "Clean Audio Features Only",
+    "MFCC + Spectral + Prosodic",
+    "No Synthetic Features",
+    "Deployment Reliable"
+  ],
+  "training_date": "2025-07-16T05:30:11.462202",
+  "extraction_success_rate": 100.0,
+  "total_samples": 10982,
+  "best_model_name": "Clean Ensemble",
+  "cv_score": 0.0,
+  "feature_selection_k": 150,
+  "scaling_method": "RobustScaler",
+  "cross_validation": "StratifiedKFold",
+  "deployment_ready": true,
+  "streamlit_compatible": true,
+  "synthetic_features_removed": true
+}

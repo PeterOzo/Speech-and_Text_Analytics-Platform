@@ -1,0 +1,12 @@
+# System packages required for audio processing with librosa
+ffmpeg
+libsndfile1
+libsndfile1-dev
+libportaudio2
+libasound2-dev
+libgfortran5
+build-essential
+python3-dev
+libblas-dev
+liblapack-dev
+gfortran
