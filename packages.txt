@@ -1,9 +1,8 @@
-build-essential 
+build-essential
 ffmpeg
-libportaudio2
-portaudio19-dev
+libsndfile1-dev
+libasound2-dev
 python3-dev
 pkg-config
-llvm-11-dev
-llvm-11-tools
-llvm-11
+portaudio19-dev
+libffi-dev
