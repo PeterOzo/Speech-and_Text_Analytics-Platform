@@ -204,9 +204,59 @@ def load_models():
             components = {}
             progress_bar = st.progress(0)
             
-            for i, (name, url) in enumerate(MODEL_URLS.items()):
+            # Load Hugging Face model first
+            st.text("Loading model from Hugging Face...")
+            try:
+                # Try multiple URL formats for Hugging Face
+                hf_urls = [
+                    'https://huggingface.co/PetAnn/sota-speech-emotion-model/resolve/main/sota_xgboost_model.pkl?download=true',
+                    'https://huggingface.co/PetAnn/sota-speech-emotion-model/resolve/main/sota_xgboost_model.pkl',
+                    'https://huggingface.co/PetAnn/sota-speech-emotion-model/blob/main/sota_xgboost_model.pkl?download=true'
+                ]
+                
+                model_loaded = False
+                for url in hf_urls:
+                    try:
+                        headers = {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                        }
+                        response = requests.get(url, timeout=120, headers=headers, stream=True)
+                        if response.status_code == 200:
+                            # Save to temporary file
+                            with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_file:
+                                for chunk in response.iter_content(chunk_size=8192):
+                                    tmp_file.write(chunk)
+                                tmp_file_path = tmp_file.name
+                            
+                            # Load model
+                            components['model'] = joblib.load(tmp_file_path)
+                            os.unlink(tmp_file_path)
+                            model_loaded = True
+                            break
+                    except Exception as e:
+                        continue
+                
+                if not model_loaded:
+                    raise Exception("Failed to load model from all attempted URLs")
+                    
+            except Exception as e:
+                st.error(f"Failed to load model from Hugging Face: {str(e)}")
+                return None
+            
+            progress_bar.progress(1/6)
+            
+            # Load other components from Google Drive
+            other_urls = {
+                'scaler': 'https://drive.google.com/uc?export=download&id=15zLOfO24Mm8k_XIPhTLrUQ2tZtEIqjzV',
+                'metadata': 'https://drive.google.com/uc?export=download&id=1Snkn5nXGFfqzh8yNtyGbCtSwzSbCcNdr',
+                'encoder': 'https://drive.google.com/uc?export=download&id=1lfCVCWHXvmwTSIx-f75kDk47FRCqH-5n',
+                'selector': 'https://drive.google.com/uc?export=download&id=1boCl4WS5MyIitieEez0BUfimGBkoYJZ9',
+                'feature_names': 'https://drive.google.com/uc?export=download&id=1y_VjJj82vuJbdAjD_loOSCQTJ-KAsuky'
+            }
+            
+            for i, (name, url) in enumerate(other_urls.items(), 2):
                 st.text(f"Loading {name}...")
-                response = requests.get(url, timeout=30)
+                response = requests.get(url, timeout=60)
                 response.raise_for_status()
                 
                 # Save to temporary file
@@ -223,15 +273,15 @@ def load_models():
                 
                 # Clean up
                 os.unlink(tmp_file_path)
-                progress_bar.progress((i + 1) / len(MODEL_URLS))
+                progress_bar.progress(i / 6)
             
             st.success("✅ All models loaded successfully!")
             return components
             
         except Exception as e:
             st.error(f"❌ Error loading models: {str(e)}")
+            st.error("Please check that all files are publicly accessible")
             return None
-
 class CleanAudioFeatureExtractor:
     """Clean audio feature extraction - NO SYNTHETIC FEATURES"""
     
