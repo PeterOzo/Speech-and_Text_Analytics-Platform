@@ -16,6 +16,13 @@ Click the Live Demo tab above for a visual tour of the Speech Emotion Recognitio
 
 <img width="1851" height="803" alt="image" src="https://github.com/user-attachments/assets/ef7a24ca-6a8b-4d5d-9181-5a7ba59a76a7" />
 
+<img width="1005" height="671" alt="image" src="https://github.com/user-attachments/assets/8e01f83e-15a1-4021-b9e8-1df0379bf1e1" />
+
+<img width="909" height="869" alt="image" src="https://github.com/user-attachments/assets/12c6c0cc-dc87-4f88-bca7-604430e39bb5" />
+
+<img width="940" height="795" alt="image" src="https://github.com/user-attachments/assets/73ed520a-59be-4084-9c92-600ecc91d96d" />
+
+
 
 
 
