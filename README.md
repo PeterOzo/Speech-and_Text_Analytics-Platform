@@ -12,6 +12,9 @@
 
 Click the Live Demo tab above for a visual tour of the Speech Emotion Recognition Platform!
 
+
+For full details, see the [Executive Report (PDF)](https://github.com/PeterOzo/App-Success-Prediction-and-Analysis/blob/main/METY-Tech_Paper_and_Shinyapp_Predicting%20Health%20App%20Success.pdf)
+
 [AnalyticsPro Platform](https://speech-and-text-analytics-platform-kqdgy2ns3bjmhqt9c26ysa.streamlit.app/) 
 
 <img width="1851" height="803" alt="image" src="https://github.com/user-attachments/assets/ef7a24ca-6a8b-4d5d-9181-5a7ba59a76a7" />
@@ -509,6 +512,8 @@ The platform provides real-time visualization of the most important audio featur
 - **Average Accuracy**: 82.0% across all emotion classes
 - **User Satisfaction**: 4.8/5.0 rating from enterprise users
 - **System Reliability**: 99.9% uptime with automatic error recovery
+
+For full details, see the [Executive Report (PDF)](https://github.com/PeterOzo/App-Success-Prediction-and-Analysis/blob/main/METY-Tech_Paper_and_Shinyapp_Predicting%20Health%20App%20Success.pdf)
 
 ## 📄 License
 
