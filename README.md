@@ -1,4 +1,4 @@
-# AnalyticsPro - Speech Emotion Recognition Platform: Advanced Audio Analytics with Ensemble Machine Learning     
+# AnalyticsPro - Speech Emotion Recognition Platform: Advanced Audio Analytics with Ensemble Machine Learning      
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit%20Cloud-brightgreen)](https://speech-and-text-analytics-platform-kqdgy2ns3bjmhqt9c26ysa.streamlit.app/)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
